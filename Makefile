@@ -7,9 +7,9 @@ ISO_DIR = $(BUILD_DIR)/iso
 
 # Files
 BOOT_ASM = $(SRC_DIR)/boot.asm
-KERNEL_C = $(SRC_DIR)/kernel.c
+KERNEL_C_FILES = $(wildcard $(SRC_DIR)/*.c)
 BOOT_OBJ = $(BUILD_DIR)/boot.o
-KERNEL_OBJ = $(BUILD_DIR)/kernel.o
+KERNEL_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(KERNEL_C_FILES))
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 GRUB_CFG = grub.cfg
 LINKER_SCRIPT = linker.ld
@@ -46,13 +46,13 @@ $(ISO_DIR): | $(BUILD_DIR)
 $(BOOT_OBJ): $(BOOT_ASM) | $(BUILD_DIR)
 	$(ASM) $(ASM_FLAGS) $< -o $@
 
-# Build kernel object file (C)
-$(KERNEL_OBJ): $(KERNEL_C) | $(BUILD_DIR)
+# Build kernel object files (C)
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
 	$(CC) $(CC_FLAGS) $< -o $@
 
 # Link kernel binary
-$(KERNEL_BIN): $(BOOT_OBJ) $(KERNEL_OBJ) $(LINKER_SCRIPT) | $(BUILD_DIR)
-	$(LD) $(LD_FLAGS) $(BOOT_OBJ) $(KERNEL_OBJ) -o $@
+$(KERNEL_BIN): $(BOOT_OBJ) $(KERNEL_OBJS) $(LINKER_SCRIPT) | $(BUILD_DIR)
+	$(LD) $(LD_FLAGS) $(BOOT_OBJ) $(KERNEL_OBJS) -o $@
 
 # Create bootable ISO with GRUB
 $(OS_ISO): $(KERNEL_BIN) $(GRUB_CFG) | $(ISO_DIR)
