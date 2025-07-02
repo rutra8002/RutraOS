@@ -1,5 +1,7 @@
 #include "kernel.h"
 #include "terminal.h"
+#include "shell.h"
+#include "keyboard.h"
 
 // Main kernel function - called from assembly
 void kernel_main(void) {
@@ -23,11 +25,13 @@ void kernel_main(void) {
     
     terminal_setcolor(make_vga_color(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK));
     terminal_writestring("YAY!\n");
-    
+
+    keyboard_init();
+    shell_init();
+
     // Infinite loop to keep the kernel running
     while (1) {
-        // In a real OS, this would be the main kernel loop
-        // For now, we just halt
-        __asm__ volatile ("hlt");
+        char c = keyboard_getchar();
+        shell_handle_input(c);
     }
 }
