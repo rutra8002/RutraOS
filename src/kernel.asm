@@ -72,7 +72,7 @@ print_string:
     popa
     ret
 
-kernel_msg db 'Kernel loaded successfully with GRUB!', 0x0A, 0x0A, 'Welcome to your RutraOS!', 0
+kernel_msg db 'Kernel loaded successfully with GRUB!', 0x0A, 0x0A, 'Welcome to RutraOS!', 0
 
 section .bss
     resb 8192       ; 8KB stack
