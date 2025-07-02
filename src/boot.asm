@@ -11,17 +11,20 @@ boot_start:
     mov sp, 0x7C00      ; Set stack pointer
     sti                 ; Enable interrupts
     
+    ; Save boot drive number (BIOS passes it in DL)
+    mov [boot_drive], dl
+    
     ; Print boot message
     mov si, boot_msg
     call print_string
     
     ; Load kernel from disk
     mov ah, 0x02        ; BIOS read sector function
-    mov al, 1           ; Number of sectors to read
+    mov al, 2           ; Number of sectors to read (kernel is now 1024 bytes = 2 sectors)
     mov ch, 0           ; Cylinder number
     mov cl, 2           ; Sector number (sector 2, after boot sector)
     mov dh, 0           ; Head number
-    mov dl, 0x80        ; Drive number (0x80 = first hard disk)
+    mov dl, [boot_drive] ; Use saved boot drive number
     mov bx, 0x1000      ; Load kernel at 0x1000
     int 0x13            ; BIOS disk interrupt
     
@@ -51,6 +54,8 @@ print_string:
 boot_msg db 'Bootloader started...', 0x0D, 0x0A, 0
 jump_msg db 'Jumping to kernel...', 0x0D, 0x0A, 0
 error_msg db 'Disk read error!', 0x0D, 0x0A, 0
+
+boot_drive db 0         ; Storage for boot drive number
 
 times 510-($-$$) db 0   ; Fill rest of sector with zeros
 db 0x55, 0xAA           ; Boot signature
