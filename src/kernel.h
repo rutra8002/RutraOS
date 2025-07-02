@@ -42,6 +42,11 @@ static inline unsigned short make_vga_entry(char c, unsigned char color) {
     return (unsigned short)c | (unsigned short)color << 8;
 }
 
+// Write a byte to the specified port
+static inline void outb(unsigned short port, unsigned char val) {
+    __asm__ volatile ("outb %0, %1" : : "a"(val), "Nd"(port));
+}
+
 // Function declarations
 void terminal_initialize(void);
 void terminal_setcolor(unsigned char color);

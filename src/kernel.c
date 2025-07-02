@@ -31,6 +31,17 @@ void terminal_putentryat(char c, unsigned char color, size_t x, size_t y) {
     ((volatile unsigned short*)VGA_BUFFER)[index] = make_vga_entry(c, color);
 }
 
+// Update the VGA hardware cursor to match terminal_row and terminal_column
+static void terminal_update_cursor(void) {
+    unsigned short pos = (unsigned short)(terminal_row * VGA_WIDTH + terminal_column);
+    // Send the high byte
+    outb(0x3D4, 0x0E);
+    outb(0x3D5, (pos >> 8) & 0xFF);
+    // Send the low byte
+    outb(0x3D4, 0x0F);
+    outb(0x3D5, pos & 0xFF);
+}
+
 // Scroll the terminal up by one line
 void terminal_scroll(void) {
     // Move all lines up by one
@@ -48,6 +59,7 @@ void terminal_scroll(void) {
         size_t index = (VGA_HEIGHT - 1) * VGA_WIDTH + x;
         ((volatile unsigned short*)VGA_BUFFER)[index] = make_vga_entry(' ', terminal_color);
     }
+    terminal_update_cursor();
 }
 
 // Put a character
@@ -68,6 +80,7 @@ void terminal_putchar(char c) {
             }
         }
     }
+    terminal_update_cursor();
 }
 
 // Print a string
