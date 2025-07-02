@@ -20,10 +20,10 @@ GRUB_MKRESCUE = grub2-mkrescue
 QEMU = qemu-system-x86_64
 
 # Assembly flags
-ASM_FLAGS = -f elf32
+ASM_FLAGS = -f elf64
 
 # Linker flags
-LD_FLAGS = -m elf_i386 -T $(LINKER_SCRIPT)
+LD_FLAGS = -m elf_x86_64 -T $(LINKER_SCRIPT)
 
 # Default target
 all: $(OS_ISO)
