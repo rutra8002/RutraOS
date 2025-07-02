@@ -5,6 +5,7 @@ MULTIBOOT_CHECKSUM  equ -(MULTIBOOT_MAGIC + MULTIBOOT_FLAGS)
 
 [BITS 32]           
 [GLOBAL _start]     ; Make _start globally visible
+[EXTERN kernel_main] ; Declare external C function
 
 section .multiboot
     ; Multiboot header
@@ -133,26 +134,15 @@ long_mode_start:
     mov fs, ax
     mov gs, ax
     
-    ; Print kernel message
-    mov rsi, kernel_msg
-    call print_string_64
+    ; Set up the stack pointer for C code
+    mov rsp, stack_top
     
-    ; Halt system
+    ; Call the C kernel main function
+    call kernel_main
+    
+    ; If kernel_main returns, halt the system
+    cli
     hlt
-
-print_string_64:
-    mov rdi, 0xB8000    ; VGA text buffer
-    mov ah, 0x0F        ; White on black attribute
-.loop:
-    lodsb               ; Load next character
-    test al, al         ; Check for null terminator
-    jz .done
-    stosw               ; Store character and attribute
-    jmp .loop
-.done:
-    ret
-
-kernel_msg db 'RutraOS 64-bit Kernel Started!', 0
 
 section .rodata
 gdt64:

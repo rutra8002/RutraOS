@@ -6,7 +6,9 @@ BUILD_DIR = build
 ISO_DIR = $(BUILD_DIR)/iso
 
 # Files
-KERNEL_ASM = $(SRC_DIR)/kernel.asm
+BOOT_ASM = $(SRC_DIR)/boot.asm
+KERNEL_C = $(SRC_DIR)/kernel.c
+BOOT_OBJ = $(BUILD_DIR)/boot.o
 KERNEL_OBJ = $(BUILD_DIR)/kernel.o
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 GRUB_CFG = grub.cfg
@@ -15,12 +17,16 @@ OS_ISO = $(BUILD_DIR)/os.iso
 
 # Tools
 ASM = nasm
+CC = gcc
 LD = ld
 GRUB_MKRESCUE = grub2-mkrescue
 QEMU = qemu-system-x86_64
 
 # Assembly flags
 ASM_FLAGS = -f elf64
+
+# C compiler flags
+CC_FLAGS = -m64 -ffreestanding -fno-stack-protector -fno-builtin -nostdlib -nostdinc -Wall -Wextra -c
 
 # Linker flags
 LD_FLAGS = -m elf_x86_64 -T $(LINKER_SCRIPT)
@@ -36,13 +42,17 @@ $(BUILD_DIR):
 $(ISO_DIR): | $(BUILD_DIR)
 	mkdir -p $(ISO_DIR)/boot/grub
 
-# Build kernel object file
-$(KERNEL_OBJ): $(KERNEL_ASM) | $(BUILD_DIR)
+# Build boot object file (assembly)
+$(BOOT_OBJ): $(BOOT_ASM) | $(BUILD_DIR)
 	$(ASM) $(ASM_FLAGS) $< -o $@
 
+# Build kernel object file (C)
+$(KERNEL_OBJ): $(KERNEL_C) | $(BUILD_DIR)
+	$(CC) $(CC_FLAGS) $< -o $@
+
 # Link kernel binary
-$(KERNEL_BIN): $(KERNEL_OBJ) $(LINKER_SCRIPT) | $(BUILD_DIR)
-	$(LD) $(LD_FLAGS) $< -o $@
+$(KERNEL_BIN): $(BOOT_OBJ) $(KERNEL_OBJ) $(LINKER_SCRIPT) | $(BUILD_DIR)
+	$(LD) $(LD_FLAGS) $(BOOT_OBJ) $(KERNEL_OBJ) -o $@
 
 # Create bootable ISO with GRUB
 $(OS_ISO): $(KERNEL_BIN) $(GRUB_CFG) | $(ISO_DIR)
