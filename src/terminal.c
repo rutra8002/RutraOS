@@ -70,6 +70,13 @@ void terminal_putchar(char c) {
             terminal_scroll();
             terminal_row = VGA_HEIGHT - 1;
         }
+    } else if (c == '\b') {
+        // Handle backspace
+        if (terminal_column > 0) {
+            terminal_column--;
+            // Clear the character at the current position
+            terminal_putentryat(' ', terminal_color, terminal_column, terminal_row);
+        }
     } else {
         terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
         if (++terminal_column == VGA_WIDTH) {
