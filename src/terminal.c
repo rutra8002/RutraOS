@@ -103,3 +103,19 @@ void terminal_writestring(const char* data) {
     while (data[len]) len++;  // Simple strlen implementation
     terminal_write(data, len);
 }
+
+// Clear the terminal screen
+void terminal_clear(void) {
+    terminal_row = 0;
+    terminal_column = 0;
+    
+    // Clear the screen
+    for (size_t y = 0; y < VGA_HEIGHT; y++) {
+        for (size_t x = 0; x < VGA_WIDTH; x++) {
+            const size_t index = y * VGA_WIDTH + x;
+            ((volatile unsigned short*)VGA_BUFFER)[index] = make_vga_entry(' ', terminal_color);
+        }
+    }
+    
+    terminal_update_cursor();
+}

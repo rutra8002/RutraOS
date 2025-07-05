@@ -45,7 +45,10 @@ void shell_handle_input(char c) {
             } else if (shell_strcmp(command_buffer, "help") == 0) {
                 terminal_writestring("Available commands:\n");
                 terminal_writestring("- shutdown: Shut down the system\n");
+                terminal_writestring("- clear: Clear the terminal screen\n");
                 terminal_writestring("- help: Show this help message\n");
+            } else if (shell_strcmp(command_buffer, "clear") == 0) {
+                terminal_clear();
             } else {
                 // Process other commands
                 terminal_writestring("Command: ");
