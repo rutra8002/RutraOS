@@ -66,9 +66,22 @@ void shell_shutdown() {
     // If ACPI fails, try QEMU/Bochs shutdown
     __asm__ volatile("outw %0, %1" : : "a"((unsigned short)0x2000), "d"((unsigned short)0xB004));
     
-    // If that fails too, force a triple fault 
-    // As copilot said - the nuclear option that works everywhere
-    terminal_writestring("Forcing system reset...\n");
+    // Try VirtualBox shutdown
+    __asm__ volatile("outw %0, %1" : : "a"((unsigned short)0x2000), "d"((unsigned short)0x4004));
+    
+    // If shutdown methods fail, just halt the system
+    terminal_writestring("System halted. You can safely power off now.\n");
+    __asm__ volatile("cli");  // Disable interrupts
+    while (1) {
+        __asm__ volatile("hlt");  // Halt
+    }
+}
+
+// Implementation of reboot function using triple fault
+void shell_reboot() {
+    terminal_writestring("Rebooting system...\n");
+    
+    // The nuclear option - force a triple fault
     __asm__ volatile("cli");           // Disable interrupts
     __asm__ volatile("lidt %0" : : "m"(*(short*)0)); // Load invalid IDT
     __asm__ volatile("int $0x03");     // Trigger interrupt with invalid IDT
@@ -86,9 +99,12 @@ void shell_handle_input(char c) {
             // Check if command is "shutdown"
             if (shell_strcmp(command_buffer, "shutdown") == 0) {
                 shell_shutdown();
+            } else if (shell_strcmp(command_buffer, "reboot") == 0) {
+                shell_reboot();
             } else if (shell_strcmp(command_buffer, "help") == 0) {
                 terminal_writestring("Available commands:\n");
                 terminal_writestring("- shutdown: Shut down the system\n");
+                terminal_writestring("- reboot: Restart the system\n");
                 terminal_writestring("- clear: Clear the terminal screen\n");
                 terminal_writestring("- help: Show this help message\n");
                 terminal_writestring("- meminfo: Show memory information\n");
