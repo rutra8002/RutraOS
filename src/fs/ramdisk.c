@@ -2,6 +2,8 @@
 #include "fat12.h"
 #include "memory.h"
 #include "terminal.h"
+#include "string.h"
+#include "memory_utils.h"
 
 // Global ramdisk instance
 static ramdisk_t ramdisk;
@@ -136,13 +138,4 @@ void ramdisk_print_info(void) {
 
 ramdisk_t* get_ramdisk(void) {
     return &ramdisk;
-}
-
-// Helper function to calculate string length
-size_t strlen(const char* str) {
-    size_t len = 0;
-    while (str[len]) {
-        len++;
-    }
-    return len;
 }

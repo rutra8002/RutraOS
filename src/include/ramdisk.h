@@ -27,7 +27,4 @@ void ramdisk_print_info(void);
 // Get the ramdisk instance
 ramdisk_t* get_ramdisk(void);
 
-// Helper functions
-size_t strlen(const char* str);
-
 #endif // RAMDISK_H

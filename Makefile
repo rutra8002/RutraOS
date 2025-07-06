@@ -5,11 +5,22 @@ SRC_DIR = src
 BUILD_DIR = build
 ISO_DIR = $(BUILD_DIR)/iso
 
+# Source subdirectories
+BOOT_DIR = $(SRC_DIR)/boot
+KERNEL_DIR = $(SRC_DIR)/kernel
+DRIVERS_DIR = $(SRC_DIR)/drivers
+FS_DIR = $(SRC_DIR)/fs
+LIB_DIR = $(SRC_DIR)/lib
+INCLUDE_DIR = $(SRC_DIR)/include
+
 # Files
-BOOT_ASM = $(SRC_DIR)/boot.asm
-KERNEL_C_FILES = $(wildcard $(SRC_DIR)/*.c)
+BOOT_ASM = $(BOOT_DIR)/boot.asm
+KERNEL_C_FILES = $(wildcard $(KERNEL_DIR)/*.c) $(wildcard $(DRIVERS_DIR)/*.c) $(wildcard $(FS_DIR)/*.c) $(wildcard $(LIB_DIR)/*.c)
 BOOT_OBJ = $(BUILD_DIR)/boot.o
-KERNEL_OBJS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(KERNEL_C_FILES))
+KERNEL_OBJS = $(patsubst $(KERNEL_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(KERNEL_DIR)/*.c)) \
+              $(patsubst $(DRIVERS_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(DRIVERS_DIR)/*.c)) \
+              $(patsubst $(FS_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(FS_DIR)/*.c)) \
+              $(patsubst $(LIB_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(LIB_DIR)/*.c))
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 GRUB_CFG = grub.cfg
 LINKER_SCRIPT = linker.ld
@@ -26,7 +37,7 @@ QEMU = qemu-system-x86_64
 ASM_FLAGS = -f elf64
 
 # C compiler flags
-CC_FLAGS = -m64 -ffreestanding -fno-stack-protector -fno-builtin -nostdlib -nostdinc -Wall -Wextra -c
+CC_FLAGS = -m64 -ffreestanding -fno-stack-protector -fno-builtin -nostdlib -nostdinc -Wall -Wextra -c -I$(INCLUDE_DIR)
 
 # Linker flags
 LD_FLAGS = -m elf_x86_64 -T $(LINKER_SCRIPT)
@@ -46,8 +57,17 @@ $(ISO_DIR): | $(BUILD_DIR)
 $(BOOT_OBJ): $(BOOT_ASM) | $(BUILD_DIR)
 	$(ASM) $(ASM_FLAGS) $< -o $@
 
-# Build kernel object files (C)
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(BUILD_DIR)
+# Build kernel object files (C) - pattern rules for each directory
+$(BUILD_DIR)/%.o: $(KERNEL_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CC_FLAGS) $< -o $@
+
+$(BUILD_DIR)/%.o: $(DRIVERS_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CC_FLAGS) $< -o $@
+
+$(BUILD_DIR)/%.o: $(FS_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CC_FLAGS) $< -o $@
+
+$(BUILD_DIR)/%.o: $(LIB_DIR)/%.c | $(BUILD_DIR)
 	$(CC) $(CC_FLAGS) $< -o $@
 
 # Link kernel binary

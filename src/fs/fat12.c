@@ -2,6 +2,9 @@
 #include "ramdisk.h"
 #include "memory.h"
 #include "terminal.h"
+#include "string.h"
+#include "memory_utils.h"
+#include "string.h"
 
 // FAT12 layout in our ramdisk:
 // Sector 0: Boot sector

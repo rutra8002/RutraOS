@@ -1,4 +1,5 @@
 #include "terminal.h"
+#include "string.h"
 
 // Terminal state
 static size_t terminal_row;
@@ -99,9 +100,7 @@ void terminal_write(const char* data, size_t size) {
 
 // Print a null-terminated string
 void terminal_writestring(const char* data) {
-    size_t len = 0;
-    while (data[len]) len++;  // Simple strlen implementation
-    terminal_write(data, len);
+    terminal_write(data, strlen(data));
 }
 
 // Clear the terminal screen

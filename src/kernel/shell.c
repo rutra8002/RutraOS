@@ -5,8 +5,8 @@
 #include "ramdisk.h"
 #include "fat12.h"
 #include "io.h"
-
-typedef unsigned long size_t;
+#include "string.h"
+#include "memory_utils.h"
 
 #define MAX_COMMAND_LENGTH 100
 
@@ -22,36 +22,6 @@ typedef struct {
     command_handler_t handler;
     const char* description;
 } shell_command_t;
-
-// String comparison helper function (n characters)
-static int shell_strncmp(const char *s1, const char *s2, size_t n) {
-    while (n > 0 && *s1 && (*s1 == *s2)) {
-        s1++;
-        s2++;
-        n--;
-    }
-    return (n == 0) ? 0 : (*(const unsigned char*)s1 - *(const unsigned char*)s2);
-}
-
-// Find character in string
-static char* shell_strchr(const char *s, int c) {
-    while (*s) {
-        if (*s == c) {
-            return (char*)s;
-        }
-        s++;
-    }
-    return NULL;
-}
-
-// String length function
-static size_t shell_strlen(const char *s) {
-    size_t len = 0;
-    while (*s++) {
-        len++;
-    }
-    return len;
-}
 
 void shell_init() {
     terminal_writestring("> ");
@@ -198,7 +168,7 @@ static void cmd_create(const char* args) {
         return;
     }
     
-    char* space = shell_strchr(args, ' ');
+    char* space = strchr(args, ' ');
     if (space) {
         // Create a copy of the filename by temporarily null-terminating
         char filename_buffer[256];
@@ -216,7 +186,7 @@ static void cmd_create(const char* args) {
         
         char* content = space + 1;
         
-        if (fat12_create_file(filename_buffer, content, shell_strlen(content))) {
+        if (fat12_create_file(filename_buffer, content, strlen(content))) {
             terminal_writestring("File created successfully\n");
         } else {
             terminal_writestring("Failed to create file\n");
@@ -253,13 +223,13 @@ static void shell_execute_command(const char* input) {
     }
     
     // Find the command name length
-    const char* space = shell_strchr(input, ' ');
-    size_t cmd_len = space ? (size_t)(space - input) : shell_strlen(input);
+    const char* space = strchr(input, ' ');
+    size_t cmd_len = space ? (size_t)(space - input) : strlen(input);
     
     // Look up command in table
     for (const shell_command_t* cmd = commands; cmd->name; cmd++) {
-        if (shell_strncmp(input, cmd->name, cmd_len) == 0 && 
-            shell_strlen(cmd->name) == cmd_len) {
+        if (strncmp(input, cmd->name, cmd_len) == 0 && 
+            strlen(cmd->name) == cmd_len) {
             // Found the command, extract arguments
             const char* args = space ? space + 1 : "";
             cmd->handler(args);

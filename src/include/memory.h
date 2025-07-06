@@ -19,11 +19,6 @@ void memory_init(void);
 void* kmalloc(size_t size);
 void kfree(void* ptr);
 
-// Memory utility functions
-void* memset(void* ptr, int value, size_t size);
-void* memcpy(void* dest, const void* src, size_t size);
-int memcmp(const void* s1, const void* s2, size_t size);
-
 // Memory debugging functions
 void memory_print_stats(void);
 

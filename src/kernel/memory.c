@@ -1,5 +1,7 @@
 #include "memory.h"
 #include "terminal.h"
+#include "string.h"
+#include "memory_utils.h"
 
 // Memory pool - our simple heap
 static char memory_pool[MEMORY_POOL_SIZE];
@@ -108,37 +110,6 @@ void kfree(void* ptr) {
             current = current->next;
         }
     }
-}
-
-void* memset(void* ptr, int value, size_t size) {
-    unsigned char* p = (unsigned char*)ptr;
-    while (size--) {
-        *p++ = (unsigned char)value;
-    }
-    return ptr;
-}
-
-void* memcpy(void* dest, const void* src, size_t size) {
-    unsigned char* d = (unsigned char*)dest;
-    const unsigned char* s = (const unsigned char*)src;
-    while (size--) {
-        *d++ = *s++;
-    }
-    return dest;
-}
-
-int memcmp(const void* s1, const void* s2, size_t size) {
-    const unsigned char* p1 = (const unsigned char*)s1;
-    const unsigned char* p2 = (const unsigned char*)s2;
-    
-    while (size--) {
-        if (*p1 != *p2) {
-            return *p1 - *p2;
-        }
-        p1++;
-        p2++;
-    }
-    return 0;
 }
 
 void memory_print_stats(void) {
