@@ -197,14 +197,67 @@ void memory_print_stats(void) {
     terminal_writestring(buffer);
     terminal_writestring("\n");
     
-    // For GRUB, the stack is managed differently
-    // Let's use a more conservative approach based on typical GRUB behavior
-    uint32_t stack_used = 8192; // 8KB conservative estimate for GRUB environment
+    // Calculate actual stack usage by finding stack boundaries
+    // The stack grows downward, so we need to find where it started
+    uint64_t kernel_end_addr = (uint64_t)(uintptr_t)kernel_end;
+    uint32_t stack_used;
     
-    terminal_writestring("  Stack used: ");
-    uint32_to_string(stack_used, buffer);
-    terminal_writestring(buffer);
-    terminal_writestring(" bytes (est)\n");
+    // Method 1: If stack is reasonably close to kernel end, measure from there
+    if (stack_pointer > kernel_end_addr && (stack_pointer - kernel_end_addr) < 0x100000) {
+        // Stack appears to be right after kernel, this is actual usage
+        stack_used = (uint32_t)(stack_pointer - kernel_end_addr);
+        terminal_writestring("  Stack used: ");
+        uint32_to_string(stack_used, buffer);
+        terminal_writestring(buffer);
+        terminal_writestring(" bytes (measured from kernel end)\n");
+    } else {
+        // Method 2: Calculate based on actual stack frame measurements
+        // Count stack frames by walking the stack and measure actual usage
+        uint64_t* frame_ptr;
+        __asm__ volatile("mov %%rbp, %0" : "=r"(frame_ptr));
+        
+        int frame_count = 0;
+        uint64_t* current_frame = frame_ptr;
+        uint64_t* first_frame = frame_ptr;
+        uint64_t* last_frame = frame_ptr;
+        
+        // Walk the stack frames (carefully) to find actual boundaries
+        while (current_frame != NULL && frame_count < 50) {
+            // Check if the frame pointer looks valid
+            if ((uint64_t)current_frame < stack_pointer || 
+                (uint64_t)current_frame > stack_pointer + 0x10000) {
+                break;
+            }
+            
+            uint64_t* next_frame = (uint64_t*)*current_frame;
+            if (next_frame <= current_frame) {
+                break; // Prevent infinite loops
+            }
+            
+            last_frame = current_frame;
+            current_frame = next_frame;
+            frame_count++;
+        }
+        
+        // Calculate actual stack usage from measured frame boundaries
+        if (frame_count > 0 && last_frame > first_frame) {
+            // Measure actual distance between first and last frame
+            stack_used = (uint32_t)((uint64_t)last_frame - (uint64_t)first_frame);
+            // Add space for current frame (from RSP to first frame)
+            stack_used += (uint32_t)((uint64_t)first_frame - stack_pointer);
+        } else {
+            // Fallback: measure from stack pointer to frame pointer
+            stack_used = (uint32_t)((uint64_t)frame_ptr - stack_pointer);
+        }
+        
+        terminal_writestring("  Stack used: ");
+        uint32_to_string(stack_used, buffer);
+        terminal_writestring(buffer);
+        terminal_writestring(" bytes (measured from ");
+        uint32_to_string(frame_count, buffer);
+        terminal_writestring(buffer);
+        terminal_writestring(" frames)\n");
+    }
     
     terminal_writestring("  Heap Pool: ");
     uint32_to_string(MEMORY_POOL_SIZE, buffer);
