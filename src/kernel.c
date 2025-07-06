@@ -2,6 +2,7 @@
 #include "terminal.h"
 #include "shell.h"
 #include "keyboard.h"
+#include "ramdisk.h"
 
 // Main kernel function - called from assembly
 void kernel_main(void) {
@@ -25,6 +26,18 @@ void kernel_main(void) {
     
     terminal_setcolor(make_vga_color(VGA_COLOR_LIGHT_BROWN, VGA_COLOR_BLACK));
     terminal_writestring("YAY!\n");
+
+    // Initialize ramdisk
+    terminal_writestring("\nInitializing ramdisk...\n");
+    if (ramdisk_init()) {
+        if (ramdisk_format_fat12()) {
+            terminal_writestring("Ramdisk ready!\n");
+        } else {
+            terminal_writestring("Failed to format ramdisk\n");
+        }
+    } else {
+        terminal_writestring("Failed to initialize ramdisk\n");
+    }
 
     keyboard_init();
     shell_init();
