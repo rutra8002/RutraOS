@@ -1,16 +1,16 @@
-#ifndef FAT12_H
-#define FAT12_H
+#ifndef FAT16_H
+#define FAT16_H
 
 #include "kernel.h"
 
-// FAT12 Constants
-#define FAT12_SECTOR_SIZE 512
-#define FAT12_CLUSTER_SIZE 1024  // 2 sectors per cluster
-#define FAT12_ROOT_ENTRIES 224
-#define FAT12_MEDIA_BYTE 0xF8   // Fixed disk
-#define FAT12_SIGNATURE 0xAA55
+// FAT16 Constants
+#define FAT16_SECTOR_SIZE 512
+#define FAT16_CLUSTER_SIZE 1024  // 2 sectors per cluster
+#define FAT16_ROOT_ENTRIES 512
+#define FAT16_MEDIA_BYTE 0xF8   // Fixed disk
+#define FAT16_SIGNATURE 0xAA55
 
-// FAT12 Boot sector structure
+// FAT16 Boot sector structure
 typedef struct __attribute__((packed)) {
     uint8_t jump[3];                // Jump instruction
     uint8_t oem_name[8];           // OEM name
@@ -34,9 +34,9 @@ typedef struct __attribute__((packed)) {
     uint8_t filesystem_type[8];    // File system type
     uint8_t boot_code[448];        // Boot code
     uint16_t boot_signature;       // Boot signature (0xAA55)
-} fat12_boot_sector_t;
+} fat16_boot_sector_t;
 
-// FAT12 Directory entry structure
+// FAT16 Directory entry structure
 typedef struct __attribute__((packed)) {
     uint8_t name[8];               // File name (8 chars)
     uint8_t ext[3];                // Extension (3 chars)
@@ -46,41 +46,41 @@ typedef struct __attribute__((packed)) {
     uint16_t create_time;          // Creation time
     uint16_t create_date;          // Creation date
     uint16_t access_date;          // Last access date
-    uint16_t cluster_high;         // High 16 bits of cluster (always 0 for FAT12)
+    uint16_t cluster_high;         // High 16 bits of cluster (always 0 for FAT16)
     uint16_t modify_time;          // Last modification time
     uint16_t modify_date;          // Last modification date
     uint16_t cluster_low;          // Low 16 bits of cluster
     uint32_t file_size;            // File size in bytes
-} fat12_dir_entry_t;
+} fat16_dir_entry_t;
 
 // File attributes
-#define FAT12_ATTR_READ_ONLY    0x01
-#define FAT12_ATTR_HIDDEN       0x02
-#define FAT12_ATTR_SYSTEM       0x04
-#define FAT12_ATTR_VOLUME_LABEL 0x08
-#define FAT12_ATTR_DIRECTORY    0x10
-#define FAT12_ATTR_ARCHIVE      0x20
-#define FAT12_ATTR_LONG_NAME    0x0F
+#define FAT16_ATTR_READ_ONLY    0x01
+#define FAT16_ATTR_HIDDEN       0x02
+#define FAT16_ATTR_SYSTEM       0x04
+#define FAT16_ATTR_VOLUME_LABEL 0x08
+#define FAT16_ATTR_DIRECTORY    0x10
+#define FAT16_ATTR_ARCHIVE      0x20
+#define FAT16_ATTR_LONG_NAME    0x0F
 
 // Special cluster values
-#define FAT12_CLUSTER_FREE      0x000
-#define FAT12_CLUSTER_RESERVED  0x001
-#define FAT12_CLUSTER_BAD       0xFF7
-#define FAT12_CLUSTER_END       0xFF8
+#define FAT16_CLUSTER_FREE      0x0000
+#define FAT16_CLUSTER_RESERVED  0x0001
+#define FAT16_CLUSTER_BAD       0xFFF7
+#define FAT16_CLUSTER_END       0xFFF8
 
-// FAT12 filesystem functions
-int fat12_format(void);
-int fat12_create_file(const char* filename, const void* data, size_t size);
-int fat12_read_file(const char* filename, void* buffer, size_t max_size);
-int fat12_delete_file(const char* filename);
-int fat12_list_files(void);
-int fat12_get_file_size(const char* filename);
+// FAT16 filesystem functions
+int fat16_format(void);
+int fat16_create_file(const char* filename, const void* data, size_t size);
+int fat16_read_file(const char* filename, void* buffer, size_t max_size);
+int fat16_delete_file(const char* filename);
+int fat16_list_files(void);
+int fat16_get_file_size(const char* filename);
 
-// Internal FAT12 functions
-uint16_t fat12_get_fat_entry(uint16_t cluster);
-void fat12_set_fat_entry(uint16_t cluster, uint16_t value);
-uint16_t fat12_find_free_cluster(void);
-int fat12_read_cluster(uint16_t cluster, void* buffer);
-int fat12_write_cluster(uint16_t cluster, const void* buffer);
+// Internal FAT16 functions
+uint16_t fat16_get_fat_entry(uint16_t cluster);
+void fat16_set_fat_entry(uint16_t cluster, uint16_t value);
+uint16_t fat16_find_free_cluster(void);
+int fat16_read_cluster(uint16_t cluster, void* buffer);
+int fat16_write_cluster(uint16_t cluster, const void* buffer);
 
-#endif // FAT12_H
+#endif // FAT16_H

@@ -1,5 +1,5 @@
 #include "ramdisk.h"
-#include "fat12.h"
+#include "fat16.h"
 #include "memory.h"
 #include "terminal.h"
 #include "string.h"
@@ -69,34 +69,34 @@ int ramdisk_write_sector(uint32_t sector, const void* buffer) {
     return 1;
 }
 
-int ramdisk_format_fat12(void) {
+int ramdisk_format_fat16(void) {
     if (!ramdisk.initialized) {
         terminal_writestring("ERROR: Ramdisk not initialized\n");
         return 0;
     }
     
-    terminal_writestring("Formatting ramdisk with FAT12 filesystem...\n");
+    terminal_writestring("Formatting ramdisk with FAT16 filesystem...\n");
     
-    // Format the ramdisk with FAT12
-    if (!fat12_format()) {
-        terminal_writestring("ERROR: FAT12 format failed\n");
+    // Format the ramdisk with FAT16
+    if (!fat16_format()) {
+        terminal_writestring("ERROR: FAT16 format failed\n");
         return 0;
     }
     
-    terminal_writestring("FAT12 filesystem created successfully\n");
+    terminal_writestring("FAT16 filesystem created successfully\n");
     
     // Create some demo files
     const char* readme_content = 
         "Welcome to RutraOS Ramdisk!\n"
-        "This is a FAT12 filesystem running entirely in RAM.\n"
+        "This is a FAT16 filesystem running entirely in RAM.\n"
         ;
     
-    if (fat12_create_file("README.TXT", readme_content, strlen(readme_content))) {
+    if (fat16_create_file("README.TXT", readme_content, strlen(readme_content))) {
         terminal_writestring("Created README.TXT\n");
     }
     
     const char* demo_content = "This is a demo file in the ramdisk!";
-    if (fat12_create_file("DEMO.TXT", demo_content, strlen(demo_content))) {
+    if (fat16_create_file("DEMO.TXT", demo_content, strlen(demo_content))) {
         terminal_writestring("Created DEMO.TXT\n");
     }
     
@@ -133,7 +133,7 @@ void ramdisk_print_info(void) {
     terminal_writestring(buffer);
     terminal_writestring("\n");
     
-    terminal_writestring("Filesystem: FAT12\n");
+    terminal_writestring("Filesystem: FAT16\n");
 }
 
 ramdisk_t* get_ramdisk(void) {

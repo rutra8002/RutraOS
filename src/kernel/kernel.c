@@ -30,7 +30,7 @@ void kernel_main(void) {
     // Initialize ramdisk
     terminal_writestring("\nInitializing ramdisk...\n");
     if (ramdisk_init()) {
-        if (ramdisk_format_fat12()) {
+        if (ramdisk_format_fat16()) {
             terminal_writestring("Ramdisk ready!\n");
         } else {
             terminal_writestring("Failed to format ramdisk\n");

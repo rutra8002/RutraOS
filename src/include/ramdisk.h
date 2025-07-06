@@ -21,7 +21,7 @@ typedef struct {
 int ramdisk_init(void);
 int ramdisk_read_sector(uint32_t sector, void* buffer);
 int ramdisk_write_sector(uint32_t sector, const void* buffer);
-int ramdisk_format_fat12(void);
+int ramdisk_format_fat16(void);
 void ramdisk_print_info(void);
 
 // Get the ramdisk instance

@@ -3,7 +3,7 @@
 #include "keyboard.h"
 #include "memory.h"
 #include "ramdisk.h"
-#include "fat12.h"
+#include "fat16.h"
 #include "io.h"
 #include "string.h"
 #include "memory_utils.h"
@@ -141,7 +141,7 @@ static void cmd_ramdisk(const char* args) {
 
 static void cmd_ls(const char* args) {
     (void)args; // Mark parameter as unused
-    fat12_list_files();
+    fat16_list_files();
 }
 
 static void cmd_cat(const char* args) {
@@ -151,7 +151,7 @@ static void cmd_cat(const char* args) {
     }
     
     char file_buffer[4096];
-    int size = fat12_read_file(args, file_buffer, sizeof(file_buffer) - 1);
+    int size = fat16_read_file(args, file_buffer, sizeof(file_buffer) - 1);
     if (size > 0) {
         file_buffer[size] = '\0';
         terminal_writestring("File contents:\n");
@@ -186,7 +186,7 @@ static void cmd_create(const char* args) {
         
         char* content = space + 1;
         
-        if (fat12_create_file(filename_buffer, content, strlen(content))) {
+        if (fat16_create_file(filename_buffer, content, strlen(content))) {
             terminal_writestring("File created successfully\n");
         } else {
             terminal_writestring("Failed to create file\n");
