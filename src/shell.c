@@ -1,6 +1,7 @@
 #include "shell.h"
 #include "terminal.h"
 #include "keyboard.h"
+#include "memory.h"
 
 typedef unsigned long size_t;
 
@@ -47,8 +48,46 @@ void shell_handle_input(char c) {
                 terminal_writestring("- shutdown: Shut down the system\n");
                 terminal_writestring("- clear: Clear the terminal screen\n");
                 terminal_writestring("- help: Show this help message\n");
+                terminal_writestring("- meminfo: Show memory information\n");
+                terminal_writestring("- memtest: Test memory allocation\n");
             } else if (shell_strcmp(command_buffer, "clear") == 0) {
                 terminal_clear();
+            } else if (shell_strcmp(command_buffer, "meminfo") == 0) {
+                memory_print_stats();
+            } else if (shell_strcmp(command_buffer, "memtest") == 0) {
+                terminal_writestring("Testing memory allocation...\n");
+                
+                // Test 1: Basic allocation
+                void* ptr1 = kmalloc(256);
+                if (ptr1) {
+                    terminal_writestring("Allocated 256 bytes successfully\n");
+                } else {
+                    terminal_writestring("Failed to allocate 256 bytes\n");
+                }
+                
+                // Test 2: Multiple allocations
+                void* ptr2 = kmalloc(512);
+                void* ptr3 = kmalloc(1024);
+                
+                if (ptr2 && ptr3) {
+                    terminal_writestring("Multiple allocations successful\n");
+                } else {
+                    terminal_writestring("Multiple allocations failed\n");
+                }
+                
+                // Test 3: Free memory
+                kfree(ptr1);
+                kfree(ptr2);
+                kfree(ptr3);
+                terminal_writestring("Memory freed successfully\n");
+                
+                // Test 4: Test memory utilities
+                char test_buffer[100];
+                memset(test_buffer, 'A', 50);
+                test_buffer[50] = '\0';
+                terminal_writestring("Memory utilities test: ");
+                terminal_writestring(test_buffer);
+                terminal_writestring("\n");
             } else {
                 // Process other commands
                 terminal_writestring("Command: ");
