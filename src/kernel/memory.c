@@ -1,4 +1,4 @@
-#include "memory.h"
+#include "../include/memory.h"
 #include "terminal.h"
 #include "string.h"
 #include "memory_utils.h"
