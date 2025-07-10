@@ -30,7 +30,7 @@ OS_ISO = $(BUILD_DIR)/os.iso
 ASM = nasm
 CC = gcc
 LD = ld
-GRUB_MKRESCUE = grub2-mkrescue
+GRUB_MKRESCUE = grub-mkrescue
 QEMU = qemu-system-x86_64
 
 # Assembly flags
