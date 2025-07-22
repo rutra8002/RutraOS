@@ -5,6 +5,7 @@
 #include "ramdisk.h"
 #include "process.h"
 #include "memory.h"
+#include "vga.h"
 
 // Main kernel function - called from assembly
 void kernel_main(void) {
@@ -47,6 +48,10 @@ void kernel_main(void) {
 
     // Initialize keyboard
     keyboard_init();
+
+    // Initialize VGA graphics (starts in text mode)
+    vga_init();
+    terminal_writestring("VGA graphics driver initialized\n");
 
     // Initialize process management
     process_init();
