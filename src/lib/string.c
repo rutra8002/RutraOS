@@ -73,3 +73,28 @@ char* strcat(char* dest, const char* src) {
     }
     return original_dest;
 }
+
+// Convert uint32_t to string
+void uint32_to_string(uint32_t value, char* buffer) {
+    if (value == 0) {
+        buffer[0] = '0';
+        buffer[1] = '\0';
+        return;
+    }
+    
+    char temp[16];
+    int i = 0;
+    
+    // Extract digits in reverse order
+    while (value > 0) {
+        temp[i++] = '0' + (value % 10);
+        value /= 10;
+    }
+    
+    // Reverse the string
+    int j = 0;
+    while (i > 0) {
+        buffer[j++] = temp[--i];
+    }
+    buffer[j] = '\0';
+}

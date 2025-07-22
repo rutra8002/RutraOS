@@ -12,4 +12,7 @@ char* strcpy(char* dest, const char* src);
 char* strncpy(char* dest, const char* src, size_t n);
 char* strcat(char* dest, const char* src);
 
+// Number to string conversion
+void uint32_to_string(uint32_t value, char* buffer);
+
 #endif // STRING_H

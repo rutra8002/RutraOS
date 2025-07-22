@@ -298,29 +298,6 @@ void memory_print_stats(void) {
     }
 }
 
-// Helper function to convert uint32 to string
-void uint32_to_string(uint32_t value, char* buffer) {
-    if (value == 0) {
-        buffer[0] = '0';
-        buffer[1] = '\0';
-        return;
-    }
-    
-    int i = 0;
-    while (value > 0) {
-        buffer[i++] = '0' + (value % 10);
-        value /= 10;
-    }
-    buffer[i] = '\0';
-    
-    // Reverse the string
-    for (int j = 0; j < i / 2; j++) {
-        char temp = buffer[j];
-        buffer[j] = buffer[i - 1 - j];
-        buffer[i - 1 - j] = temp;
-    }
-}
-
 // Helper function to convert uint32 to hex string
 void uint32_to_hex(uint32_t value, char* buffer) {
     const char hex_chars[] = "0123456789ABCDEF";
