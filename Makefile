@@ -12,17 +12,28 @@ DRIVERS_DIR = $(SRC_DIR)/drivers
 FS_DIR = $(SRC_DIR)/fs
 LIB_DIR = $(SRC_DIR)/lib
 COMMANDS_DIR = $(SRC_DIR)/commands
+COMMANDS_FS_DIR = $(COMMANDS_DIR)/filesystem
+COMMANDS_GFX_DIR = $(COMMANDS_DIR)/graphics
+COMMANDS_SYS_DIR = $(COMMANDS_DIR)/system
+COMMANDS_PROC_DIR = $(COMMANDS_DIR)/process
+COMMANDS_UTILS_DIR = $(COMMANDS_DIR)/utils
 INCLUDE_DIR = $(SRC_DIR)/include
 
 # Files
 BOOT_ASM = $(BOOT_DIR)/boot.asm
-KERNEL_C_FILES = $(wildcard $(KERNEL_DIR)/*.c) $(wildcard $(DRIVERS_DIR)/*.c) $(wildcard $(FS_DIR)/*.c) $(wildcard $(LIB_DIR)/*.c) $(wildcard $(COMMANDS_DIR)/*.c)
+KERNEL_C_FILES = $(wildcard $(KERNEL_DIR)/*.c) $(wildcard $(DRIVERS_DIR)/*.c) $(wildcard $(FS_DIR)/*.c) $(wildcard $(LIB_DIR)/*.c) \
+                 $(wildcard $(COMMANDS_FS_DIR)/*.c) $(wildcard $(COMMANDS_GFX_DIR)/*.c) $(wildcard $(COMMANDS_SYS_DIR)/*.c) \
+                 $(wildcard $(COMMANDS_PROC_DIR)/*.c) $(wildcard $(COMMANDS_UTILS_DIR)/*.c)
 BOOT_OBJ = $(BUILD_DIR)/boot.o
 KERNEL_OBJS = $(patsubst $(KERNEL_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(KERNEL_DIR)/*.c)) \
               $(patsubst $(DRIVERS_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(DRIVERS_DIR)/*.c)) \
               $(patsubst $(FS_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(FS_DIR)/*.c)) \
               $(patsubst $(LIB_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(LIB_DIR)/*.c)) \
-              $(patsubst $(COMMANDS_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(COMMANDS_DIR)/*.c))
+              $(patsubst $(COMMANDS_FS_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(COMMANDS_FS_DIR)/*.c)) \
+              $(patsubst $(COMMANDS_GFX_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(COMMANDS_GFX_DIR)/*.c)) \
+              $(patsubst $(COMMANDS_SYS_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(COMMANDS_SYS_DIR)/*.c)) \
+              $(patsubst $(COMMANDS_PROC_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(COMMANDS_PROC_DIR)/*.c)) \
+              $(patsubst $(COMMANDS_UTILS_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(COMMANDS_UTILS_DIR)/*.c))
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 GRUB_CFG = grub.cfg
 LINKER_SCRIPT = linker.ld
@@ -72,7 +83,19 @@ $(BUILD_DIR)/%.o: $(FS_DIR)/%.c | $(BUILD_DIR)
 $(BUILD_DIR)/%.o: $(LIB_DIR)/%.c | $(BUILD_DIR)
 	$(CC) $(CC_FLAGS) $< -o $@
 
-$(BUILD_DIR)/%.o: $(COMMANDS_DIR)/%.c | $(BUILD_DIR)
+$(BUILD_DIR)/%.o: $(COMMANDS_FS_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CC_FLAGS) $< -o $@
+
+$(BUILD_DIR)/%.o: $(COMMANDS_GFX_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CC_FLAGS) $< -o $@
+
+$(BUILD_DIR)/%.o: $(COMMANDS_SYS_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CC_FLAGS) $< -o $@
+
+$(BUILD_DIR)/%.o: $(COMMANDS_PROC_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CC_FLAGS) $< -o $@
+
+$(BUILD_DIR)/%.o: $(COMMANDS_UTILS_DIR)/%.c | $(BUILD_DIR)
 	$(CC) $(CC_FLAGS) $< -o $@
 
 # Link kernel binary

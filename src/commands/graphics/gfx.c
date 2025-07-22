@@ -33,6 +33,7 @@ static int cmd_gfx_main(int argc, char** argv) {
         for (volatile int i = 0; i < 1000000; i++);
         
         vga_set_mode_13h();
+        vga_clear_screen(COLOR_BLACK);
         return 0;
     }
     
