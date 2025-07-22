@@ -39,6 +39,18 @@ char* strchr(const char* s, int c) {
     return (*s == c) ? (char*)s : NULL;
 }
 
+// Find last occurrence of character in string
+char* strrchr(const char* s, int c) {
+    const char* last = NULL;
+    while (*s) {
+        if (*s == c) {
+            last = s;
+        }
+        s++;
+    }
+    return (*s == c) ? (char*)s : (char*)last;
+}
+
 // Copy string
 char* strcpy(char* dest, const char* src) {
     char* original_dest = dest;
@@ -97,4 +109,47 @@ void uint32_to_string(uint32_t value, char* buffer) {
         buffer[j++] = temp[--i];
     }
     buffer[j] = '\0';
+}
+
+// String tokenizer function
+char* strtok(char* str, const char* delim) {
+    static char* last_token = NULL;
+    char* start;
+    char* end;
+    
+    // Use provided string or continue from last token
+    if (str != NULL) {
+        last_token = str;
+    } else if (last_token == NULL) {
+        return NULL;
+    }
+    
+    start = last_token;
+    
+    // Skip leading delimiters
+    while (*start && strchr(delim, *start)) {
+        start++;
+    }
+    
+    // If we reached end of string, no more tokens
+    if (*start == '\0') {
+        last_token = NULL;
+        return NULL;
+    }
+    
+    // Find end of current token
+    end = start;
+    while (*end && !strchr(delim, *end)) {
+        end++;
+    }
+    
+    // If we found a delimiter, replace it with null terminator
+    if (*end) {
+        *end = '\0';
+        last_token = end + 1;
+    } else {
+        last_token = NULL;
+    }
+    
+    return start;
 }

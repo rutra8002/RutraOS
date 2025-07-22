@@ -6,6 +6,10 @@
 #include "memory_utils.h"
 #include "string.h"
 
+// Current directory tracking
+static char current_directory[256] = "/";
+static uint16_t current_directory_cluster = 0;  // 0 means root directory
+
 // FAT16 layout in our ramdisk:
 // Sector 0: Boot sector
 // Sector 1-16: FAT1 (16 sectors for 512KB disk)
@@ -236,13 +240,17 @@ int fat16_write_cluster(uint16_t cluster, const void* buffer) {
 }
 
 int fat16_create_file(const char* filename, const void* data, size_t size) {
-    // Find free directory entry
+    // Find free directory entry in current directory
     uint8_t dir_sector[FAT16_SECTOR_SIZE];
     fat16_dir_entry_t* entry = NULL;
     uint32_t entry_sector = 0;
+    uint32_t start_sector = (current_directory_cluster == 0) ? FAT16_ROOT_START : 
+                           FAT16_DATA_START + (current_directory_cluster - 2) * 2;
+    uint32_t sectors_to_read = (current_directory_cluster == 0) ? FAT16_ROOT_SECTORS : 2;
     
-    for (uint32_t sector = FAT16_ROOT_START; sector < FAT16_ROOT_START + FAT16_ROOT_SECTORS; sector++) {
-        if (!ramdisk_read_sector(sector, dir_sector)) {
+    for (uint32_t sector = 0; sector < sectors_to_read; sector++) {
+        uint32_t actual_sector = start_sector + sector;
+        if (!ramdisk_read_sector(actual_sector, dir_sector)) {
             return 0;
         }
         
@@ -252,7 +260,7 @@ int fat16_create_file(const char* filename, const void* data, size_t size) {
             if (dir_entry->name[0] == 0x00 || dir_entry->name[0] == 0xE5) {
                 // Free entry found
                 entry = dir_entry;
-                entry_sector = sector;
+                entry_sector = actual_sector;
                 break;
             }
         }
@@ -328,68 +336,7 @@ int fat16_create_file(const char* filename, const void* data, size_t size) {
 }
 
 int fat16_list_files(void) {
-    terminal_writestring("Directory listing:\n");
-    
-    uint8_t dir_sector[FAT16_SECTOR_SIZE];
-    int file_count = 0;
-    
-    for (uint32_t sector = FAT16_ROOT_START; sector < FAT16_ROOT_START + FAT16_ROOT_SECTORS; sector++) {
-        if (!ramdisk_read_sector(sector, dir_sector)) {
-            return 0;
-        }
-        
-        for (uint32_t i = 0; i < FAT16_SECTOR_SIZE / sizeof(fat16_dir_entry_t); i++) {
-            fat16_dir_entry_t* entry = (fat16_dir_entry_t*)&dir_sector[i * sizeof(fat16_dir_entry_t)];
-            
-            if (entry->name[0] == 0x00) {
-                break; // End of directory
-            }
-            
-            if (entry->name[0] == 0xE5) {
-                continue; // Deleted entry
-            }
-            
-            if (entry->attributes & FAT16_ATTR_VOLUME_LABEL) {
-                continue; // Volume label
-            }
-            
-            // Print filename
-            char filename[13];
-            int j = 0;
-            
-            // Copy name
-            for (int k = 0; k < 8 && entry->name[k] != ' '; k++) {
-                filename[j++] = entry->name[k];
-            }
-            
-            // Add extension if present
-            if (entry->ext[0] != ' ') {
-                filename[j++] = '.';
-                for (int k = 0; k < 3 && entry->ext[k] != ' '; k++) {
-                    filename[j++] = entry->ext[k];
-                }
-            }
-            
-            filename[j] = '\0';
-            
-            terminal_writestring("  ");
-            terminal_writestring(filename);
-            terminal_writestring(" (");
-            
-            char size_str[16];
-            uint32_to_string(entry->file_size, size_str);
-            terminal_writestring(size_str);
-            terminal_writestring(" bytes)\n");
-            
-            file_count++;
-        }
-    }
-    
-    if (file_count == 0) {
-        terminal_writestring("  No files found.\n");
-    }
-    
-    return 1;
+    return fat16_list_directory(".");
 }
 
 int fat16_read_file(const char* filename, void* buffer, size_t max_size) {
@@ -397,12 +344,15 @@ int fat16_read_file(const char* filename, void* buffer, size_t max_size) {
     char fatname[11];
     fat16_name_to_fatname(filename, fatname);
     
-    // Find file in root directory
+    // Find file in current directory
     uint8_t dir_sector[FAT16_SECTOR_SIZE];
     fat16_dir_entry_t* entry = NULL;
+    uint32_t start_sector = (current_directory_cluster == 0) ? FAT16_ROOT_START : 
+                           FAT16_DATA_START + (current_directory_cluster - 2) * 2;
+    uint32_t sectors_to_read = (current_directory_cluster == 0) ? FAT16_ROOT_SECTORS : 2;
     
-    for (uint32_t sector = FAT16_ROOT_START; sector < FAT16_ROOT_START + FAT16_ROOT_SECTORS; sector++) {
-        if (!ramdisk_read_sector(sector, dir_sector)) {
+    for (uint32_t sector = 0; sector < sectors_to_read; sector++) {
+        if (!ramdisk_read_sector(start_sector + sector, dir_sector)) {
             return 0;
         }
         
@@ -466,11 +416,14 @@ int fat16_get_file_size(const char* filename) {
     char fatname[11];
     fat16_name_to_fatname(filename, fatname);
     
-    // Find file in root directory
+    // Find file in current directory
     uint8_t dir_sector[FAT16_SECTOR_SIZE];
+    uint32_t start_sector = (current_directory_cluster == 0) ? FAT16_ROOT_START : 
+                           FAT16_DATA_START + (current_directory_cluster - 2) * 2;
+    uint32_t sectors_to_read = (current_directory_cluster == 0) ? FAT16_ROOT_SECTORS : 2;
     
-    for (uint32_t sector = FAT16_ROOT_START; sector < FAT16_ROOT_START + FAT16_ROOT_SECTORS; sector++) {
-        if (!ramdisk_read_sector(sector, dir_sector)) {
+    for (uint32_t sector = 0; sector < sectors_to_read; sector++) {
+        if (!ramdisk_read_sector(start_sector + sector, dir_sector)) {
             return -1;
         }
         
@@ -488,4 +441,390 @@ int fat16_get_file_size(const char* filename) {
     }
     
     return -1; // File not found
+}
+
+// Directory support functions
+
+// Get current directory path
+char* fat16_get_current_directory(void) {
+    return current_directory;
+}
+
+// Parse a path into components
+int fat16_parse_path(const char* path, char* components[], int max_components) {
+    if (!path || !components) {
+        return 0;
+    }
+    
+    int count = 0;
+    char* path_copy = (char*)kmalloc(strlen(path) + 1);
+    strcpy(path_copy, path);
+    
+    char* token = strtok(path_copy, "/");
+    while (token && count < max_components) {
+        if (strcmp(token, ".") != 0) {  // Skip current directory references
+            if (strcmp(token, "..") == 0) {
+                // Parent directory - remove last component if possible
+                if (count > 0) {
+                    kfree(components[count - 1]);
+                    count--;
+                }
+            } else {
+                components[count] = (char*)kmalloc(strlen(token) + 1);
+                strcpy(components[count], token);
+                count++;
+            }
+        }
+        token = strtok(NULL, "/");
+    }
+    
+    kfree(path_copy);
+    return count;
+}
+
+// Check if a directory entry is a directory
+int fat16_is_directory(const char* name) {
+    char fatname[11];
+    fat16_name_to_fatname(name, fatname);
+    
+    // Search in current directory
+    uint8_t dir_sector[FAT16_SECTOR_SIZE];
+    uint32_t start_sector = (current_directory_cluster == 0) ? FAT16_ROOT_START : 
+                           FAT16_DATA_START + (current_directory_cluster - 2) * 2;
+    uint32_t sectors_to_read = (current_directory_cluster == 0) ? FAT16_ROOT_SECTORS : 2;
+    
+    for (uint32_t sector = 0; sector < sectors_to_read; sector++) {
+        if (!ramdisk_read_sector(start_sector + sector, dir_sector)) {
+            return 0;
+        }
+        
+        for (uint32_t i = 0; i < FAT16_SECTOR_SIZE / sizeof(fat16_dir_entry_t); i++) {
+            fat16_dir_entry_t* entry = (fat16_dir_entry_t*)&dir_sector[i * sizeof(fat16_dir_entry_t)];
+            
+            if (entry->name[0] == 0x00) {
+                return 0; // End of directory
+            }
+            
+            if (entry->name[0] == 0xE5) {
+                continue; // Deleted entry
+            }
+            
+            if (fat16_name_compare(entry->name, fatname) == 0) {
+                return (entry->attributes & FAT16_ATTR_DIRECTORY) ? 1 : 0;
+            }
+        }
+    }
+    
+    return 0;
+}
+
+// Create a new directory
+int fat16_create_directory(const char* dirname) {
+    if (!dirname || strlen(dirname) == 0) {
+        return 0;
+    }
+    
+    // Find free directory entry in current directory
+    uint8_t dir_sector[FAT16_SECTOR_SIZE];
+    fat16_dir_entry_t* entry = NULL;
+    uint32_t entry_sector = 0;
+    uint32_t start_sector = (current_directory_cluster == 0) ? FAT16_ROOT_START : 
+                           FAT16_DATA_START + (current_directory_cluster - 2) * 2;
+    uint32_t sectors_to_read = (current_directory_cluster == 0) ? FAT16_ROOT_SECTORS : 2;
+    
+    for (uint32_t sector = 0; sector < sectors_to_read; sector++) {
+        uint32_t actual_sector = start_sector + sector;
+        if (!ramdisk_read_sector(actual_sector, dir_sector)) {
+            return 0;
+        }
+        
+        for (uint32_t i = 0; i < FAT16_SECTOR_SIZE / sizeof(fat16_dir_entry_t); i++) {
+            fat16_dir_entry_t* dir_entry = (fat16_dir_entry_t*)&dir_sector[i * sizeof(fat16_dir_entry_t)];
+            
+            if (dir_entry->name[0] == 0x00 || dir_entry->name[0] == 0xE5) {
+                entry = dir_entry;
+                entry_sector = actual_sector;
+                break;
+            }
+        }
+        
+        if (entry) {
+            break;
+        }
+    }
+    
+    if (!entry) {
+        return 0; // No free directory entry
+    }
+    
+    // Allocate a cluster for the new directory
+    uint16_t dir_cluster = fat16_find_free_cluster();
+    if (dir_cluster == 0) {
+        return 0; // No free cluster
+    }
+    
+    // Mark cluster as end of chain
+    fat16_set_fat_entry(dir_cluster, 0xFFFF);
+    
+    // Create directory entry
+    char fatname[11];
+    fat16_name_to_fatname(dirname, fatname);
+    
+    memset(entry, 0, sizeof(fat16_dir_entry_t));
+    memcpy(entry->name, fatname, 11);
+    entry->attributes = FAT16_ATTR_DIRECTORY;
+    entry->cluster_low = dir_cluster;
+    entry->file_size = 0; // Directories have size 0
+    
+    // Write directory entry back to disk
+    if (!ramdisk_write_sector(entry_sector, dir_sector)) {
+        return 0;
+    }
+    
+    // Initialize the new directory with . and .. entries
+    uint8_t new_dir_data[FAT16_CLUSTER_SIZE];
+    memset(new_dir_data, 0, FAT16_CLUSTER_SIZE);
+    
+    // Create "." entry (current directory)
+    fat16_dir_entry_t* dot_entry = (fat16_dir_entry_t*)new_dir_data;
+    memset(dot_entry->name, ' ', 11);
+    dot_entry->name[0] = '.';
+    dot_entry->attributes = FAT16_ATTR_DIRECTORY;
+    dot_entry->cluster_low = dir_cluster;
+    
+    // Create ".." entry (parent directory)
+    fat16_dir_entry_t* dotdot_entry = (fat16_dir_entry_t*)(new_dir_data + sizeof(fat16_dir_entry_t));
+    memset(dotdot_entry->name, ' ', 11);
+    dotdot_entry->name[0] = '.';
+    dotdot_entry->name[1] = '.';
+    dotdot_entry->attributes = FAT16_ATTR_DIRECTORY;
+    dotdot_entry->cluster_low = current_directory_cluster; // Parent cluster (0 for root)
+    
+    // Write the new directory data
+    if (!fat16_write_cluster(dir_cluster, new_dir_data)) {
+        return 0;
+    }
+    
+    return 1;
+}
+
+// Change current directory
+int fat16_change_directory(const char* path) {
+    if (!path) {
+        return 0;
+    }
+    
+    // Handle special cases
+    if (strcmp(path, ".") == 0) {
+        return 1; // Stay in current directory
+    }
+    
+    if (strcmp(path, "..") == 0) {
+        // Go to parent directory
+        if (current_directory_cluster == 0) {
+            return 1; // Already at root
+        }
+        
+        // Look for ".." entry in current directory
+        uint8_t dir_sector[FAT16_SECTOR_SIZE];
+        uint32_t start_sector = FAT16_DATA_START + (current_directory_cluster - 2) * 2;
+        
+        if (ramdisk_read_sector(start_sector, dir_sector)) {
+            fat16_dir_entry_t* dotdot_entry = (fat16_dir_entry_t*)(dir_sector + sizeof(fat16_dir_entry_t));
+            current_directory_cluster = dotdot_entry->cluster_low;
+            
+            // Update path string
+            char* last_slash = strrchr(current_directory, '/');
+            if (last_slash && last_slash != current_directory) {
+                *last_slash = '\0';
+            } else {
+                strcpy(current_directory, "/");
+            }
+        }
+        return 1;
+    }
+    
+    // Handle absolute paths
+    if (path[0] == '/') {
+        current_directory_cluster = 0;
+        strcpy(current_directory, "/");
+        
+        if (strlen(path) == 1) {
+            return 1; // Root directory
+        }
+        
+        path++; // Skip leading slash
+    }
+    
+    // Parse path components
+    char* components[16];
+    int component_count = fat16_parse_path(path, components, 16);
+    
+    // Navigate through each component
+    for (int i = 0; i < component_count; i++) {
+        // Look for the component in current directory
+        uint8_t dir_sector[FAT16_SECTOR_SIZE];
+        uint32_t start_sector = (current_directory_cluster == 0) ? FAT16_ROOT_START : 
+                               FAT16_DATA_START + (current_directory_cluster - 2) * 2;
+        uint32_t sectors_to_read = (current_directory_cluster == 0) ? FAT16_ROOT_SECTORS : 2;
+        
+        int found = 0;
+        for (uint32_t sector = 0; sector < sectors_to_read && !found; sector++) {
+            if (!ramdisk_read_sector(start_sector + sector, dir_sector)) {
+                // Clean up allocated components
+                for (int j = i; j < component_count; j++) {
+                    kfree(components[j]);
+                }
+                return 0;
+            }
+            
+            for (uint32_t j = 0; j < FAT16_SECTOR_SIZE / sizeof(fat16_dir_entry_t); j++) {
+                fat16_dir_entry_t* entry = (fat16_dir_entry_t*)&dir_sector[j * sizeof(fat16_dir_entry_t)];
+                
+                if (entry->name[0] == 0x00) {
+                    break; // End of directory
+                }
+                
+                if (entry->name[0] == 0xE5) {
+                    continue; // Deleted entry
+                }
+                
+                char fatname[11];
+                fat16_name_to_fatname(components[i], fatname);
+                
+                if (fat16_name_compare(entry->name, fatname) == 0 && 
+                    (entry->attributes & FAT16_ATTR_DIRECTORY)) {
+                    
+                    // Found the directory
+                    current_directory_cluster = entry->cluster_low;
+                    
+                    // Update current directory path
+                    if (strcmp(current_directory, "/") != 0) {
+                        strcat(current_directory, "/");
+                    }
+                    strcat(current_directory, components[i]);
+                    
+                    found = 1;
+                    break;
+                }
+            }
+        }
+        
+        if (!found) {
+            // Clean up allocated components
+            for (int j = i; j < component_count; j++) {
+                kfree(components[j]);
+            }
+            return 0; // Directory not found
+        }
+    }
+    
+    // Clean up allocated components
+    for (int i = 0; i < component_count; i++) {
+        kfree(components[i]);
+    }
+    
+    return 1;
+}
+
+// List directory contents (enhanced version)
+int fat16_list_directory(const char* path) {
+    uint16_t old_cluster = current_directory_cluster;
+    char old_path[256];
+    strcpy(old_path, current_directory);
+    
+    // Change to target directory if path is provided
+    if (path && strlen(path) > 0 && strcmp(path, ".") != 0) {
+        if (!fat16_change_directory(path)) {
+            terminal_writestring("Directory not found: ");
+            terminal_writestring(path);
+            terminal_writestring("\n");
+            return 0;
+        }
+    }
+    
+    terminal_writestring("Directory listing for ");
+    terminal_writestring(current_directory);
+    terminal_writestring(":\n");
+    
+    uint8_t dir_sector[FAT16_SECTOR_SIZE];
+    int entry_count = 0;
+    uint32_t start_sector = (current_directory_cluster == 0) ? FAT16_ROOT_START : 
+                           FAT16_DATA_START + (current_directory_cluster - 2) * 2;
+    uint32_t sectors_to_read = (current_directory_cluster == 0) ? FAT16_ROOT_SECTORS : 2;
+    
+    for (uint32_t sector = 0; sector < sectors_to_read; sector++) {
+        if (!ramdisk_read_sector(start_sector + sector, dir_sector)) {
+            return 0;
+        }
+        
+        for (uint32_t i = 0; i < FAT16_SECTOR_SIZE / sizeof(fat16_dir_entry_t); i++) {
+            fat16_dir_entry_t* entry = (fat16_dir_entry_t*)&dir_sector[i * sizeof(fat16_dir_entry_t)];
+            
+            if (entry->name[0] == 0x00) {
+                goto end_listing; // End of directory
+            }
+            
+            if (entry->name[0] == 0xE5) {
+                continue; // Deleted entry
+            }
+            
+            if (entry->attributes & FAT16_ATTR_VOLUME_LABEL) {
+                continue; // Volume label
+            }
+            
+            // Print entry
+            terminal_writestring("  ");
+            
+            if (entry->attributes & FAT16_ATTR_DIRECTORY) {
+                terminal_writestring("[DIR] ");
+            } else {
+                terminal_writestring("      ");
+            }
+            
+            // Print filename
+            char filename[13];
+            int j = 0;
+            
+            // Copy name
+            for (int k = 0; k < 8 && entry->name[k] != ' '; k++) {
+                filename[j++] = entry->name[k];
+            }
+            
+            // Add extension if present and not a directory
+            if (!(entry->attributes & FAT16_ATTR_DIRECTORY) && entry->ext[0] != ' ') {
+                filename[j++] = '.';
+                for (int k = 0; k < 3 && entry->ext[k] != ' '; k++) {
+                    filename[j++] = entry->ext[k];
+                }
+            }
+            
+            filename[j] = '\0';
+            terminal_writestring(filename);
+            
+            if (!(entry->attributes & FAT16_ATTR_DIRECTORY)) {
+                terminal_writestring(" (");
+                char size_str[16];
+                uint32_to_string(entry->file_size, size_str);
+                terminal_writestring(size_str);
+                terminal_writestring(" bytes)");
+            }
+            
+            terminal_writestring("\n");
+            entry_count++;
+        }
+    }
+    
+end_listing:
+    if (entry_count == 0) {
+        terminal_writestring("  No entries found.\n");
+    }
+    
+    // Restore original directory if we changed it
+    if (path && strlen(path) > 0 && strcmp(path, ".") != 0) {
+        current_directory_cluster = old_cluster;
+        strcpy(current_directory, old_path);
+    }
+    
+    return 1;
 }
