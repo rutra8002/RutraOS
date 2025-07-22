@@ -63,13 +63,10 @@ void kernel_main(void) {
                                          PROCESS_PRIORITY_HIGH, 16384);
     if (!shell_proc) {
         terminal_writestring("ERROR: Failed to create shell process\n");
-        terminal_writestring("Falling back to monolithic mode...\n");
-        
-        // Fallback to old shell system
-        shell_init();
+        terminal_writestring("System cannot continue without shell process.\n");
+        terminal_writestring("System halted.\n");
         while (1) {
-            char c = keyboard_getchar();
-            shell_handle_input(c);
+            __asm__ volatile("hlt");
         }
     }
 
