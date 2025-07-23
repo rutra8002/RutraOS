@@ -6,11 +6,15 @@
 #include "process.h"
 #include "memory.h"
 #include "vga.h"
+#include "ata.h"
 
 // Main kernel function - called from assembly
 void kernel_main(void) {
     // Initialize the terminal
     terminal_initialize();
+    
+    // Detect disks
+    ata_detect_disks();
     
     // Set a nice color scheme
     terminal_setcolor(make_vga_color(VGA_COLOR_LIGHT_GREEN, VGA_COLOR_BLACK));
