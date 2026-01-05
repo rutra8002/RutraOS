@@ -1,10 +1,14 @@
 #include "terminal.h"
 #include "string.h"
+#include "vga.h"
+#include "memory_utils.h"
 
 // Terminal state
 static size_t terminal_row;
 static size_t terminal_column;
 static unsigned char terminal_color;
+static size_t terminal_width = 80;
+static size_t terminal_height = 25;
 
 // Initialize the terminal
 void terminal_initialize(void) {
@@ -12,11 +16,19 @@ void terminal_initialize(void) {
     terminal_column = 0;
     terminal_color = make_vga_color(VGA_COLOR_LIGHT_GREY, VGA_COLOR_BLACK);
     
-    // Clear the screen
-    for (size_t y = 0; y < VGA_HEIGHT; y++) {
-        for (size_t x = 0; x < VGA_WIDTH; x++) {
-            const size_t index = y * VGA_WIDTH + x;
-            ((volatile unsigned short*)VGA_BUFFER)[index] = make_vga_entry(' ', terminal_color);
+    if (vga_state.graphics_mode) {
+        terminal_width = VGA_GFX_WIDTH / 8;
+        terminal_height = VGA_GFX_HEIGHT / 8;
+        vga_clear_screen(COLOR_BLACK);
+    } else {
+        terminal_width = 80;
+        terminal_height = 25;
+        // Clear the screen
+        for (size_t y = 0; y < 25; y++) {
+            for (size_t x = 0; x < 80; x++) {
+                const size_t index = y * 80 + x;
+                ((volatile unsigned short*)VGA_BUFFER)[index] = make_vga_entry(' ', terminal_color);
+            }
         }
     }
 }
@@ -28,13 +40,21 @@ void terminal_setcolor(unsigned char color) {
 
 // Put a character at a specific position
 void terminal_putentryat(char c, unsigned char color, size_t x, size_t y) {
-    const size_t index = y * VGA_WIDTH + x;
-    ((volatile unsigned short*)VGA_BUFFER)[index] = make_vga_entry(c, color);
+    if (vga_state.graphics_mode) {
+        uint8_t fg = color & 0x0F;
+        uint8_t bg = (color >> 4) & 0x0F;
+        vga_draw_char(x * 8, y * 8, c, fg, bg);
+    } else {
+        const size_t index = y * 80 + x;
+        ((volatile unsigned short*)VGA_BUFFER)[index] = make_vga_entry(c, color);
+    }
 }
 
 // Update the VGA hardware cursor to match terminal_row and terminal_column
 static void terminal_update_cursor(void) {
-    unsigned short pos = (unsigned short)(terminal_row * VGA_WIDTH + terminal_column);
+    if (vga_state.graphics_mode) return;
+
+    unsigned short pos = (unsigned short)(terminal_row * 80 + terminal_column);
     // Send the high byte
     outb(0x3D4, 0x0E);
     outb(0x3D5, (pos >> 8) & 0xFF);
@@ -45,20 +65,31 @@ static void terminal_update_cursor(void) {
 
 // Scroll the terminal up by one line
 void terminal_scroll(void) {
-    // Move all lines up by one
-    for (size_t y = 0; y < VGA_HEIGHT - 1; y++) {
-        for (size_t x = 0; x < VGA_WIDTH; x++) {
-            size_t src_index = (y + 1) * VGA_WIDTH + x;
-            size_t dst_index = y * VGA_WIDTH + x;
-            ((volatile unsigned short*)VGA_BUFFER)[dst_index] = 
-                ((volatile unsigned short*)VGA_BUFFER)[src_index];
+    if (vga_state.graphics_mode) {
+        uint8_t* fb = vga_state.framebuffer;
+        size_t line_size = VGA_GFX_WIDTH * 8;
+        size_t total_size = VGA_GFX_WIDTH * VGA_GFX_HEIGHT;
+        
+        memcpy(fb, fb + line_size, total_size - line_size);
+        
+        uint8_t bg = (terminal_color >> 4) & 0x0F;
+        memset(fb + total_size - line_size, bg, line_size);
+    } else {
+        // Move all lines up by one
+        for (size_t y = 0; y < 25 - 1; y++) {
+            for (size_t x = 0; x < 80; x++) {
+                size_t src_index = (y + 1) * 80 + x;
+                size_t dst_index = y * 80 + x;
+                ((volatile unsigned short*)VGA_BUFFER)[dst_index] = 
+                    ((volatile unsigned short*)VGA_BUFFER)[src_index];
+            }
         }
-    }
-    
-    // Clear the bottom line
-    for (size_t x = 0; x < VGA_WIDTH; x++) {
-        size_t index = (VGA_HEIGHT - 1) * VGA_WIDTH + x;
-        ((volatile unsigned short*)VGA_BUFFER)[index] = make_vga_entry(' ', terminal_color);
+        
+        // Clear the bottom line
+        for (size_t x = 0; x < 80; x++) {
+            size_t index = (25 - 1) * 80 + x;
+            ((volatile unsigned short*)VGA_BUFFER)[index] = make_vga_entry(' ', terminal_color);
+        }
     }
     terminal_update_cursor();
 }
@@ -67,9 +98,9 @@ void terminal_scroll(void) {
 void terminal_putchar(char c) {
     if (c == '\n') {
         terminal_column = 0;
-        if (++terminal_row == VGA_HEIGHT) {
+        if (++terminal_row == terminal_height) {
             terminal_scroll();
-            terminal_row = VGA_HEIGHT - 1;
+            terminal_row = terminal_height - 1;
         }
     } else if (c == '\b') {
         // Handle backspace
@@ -80,11 +111,11 @@ void terminal_putchar(char c) {
         }
     } else {
         terminal_putentryat(c, terminal_color, terminal_column, terminal_row);
-        if (++terminal_column == VGA_WIDTH) {
+        if (++terminal_column == terminal_width) {
             terminal_column = 0;
-            if (++terminal_row == VGA_HEIGHT) {
+            if (++terminal_row == terminal_height) {
                 terminal_scroll();
-                terminal_row = VGA_HEIGHT - 1;
+                terminal_row = terminal_height - 1;
             }
         }
     }
@@ -108,11 +139,16 @@ void terminal_clear(void) {
     terminal_row = 0;
     terminal_column = 0;
     
-    // Clear the screen
-    for (size_t y = 0; y < VGA_HEIGHT; y++) {
-        for (size_t x = 0; x < VGA_WIDTH; x++) {
-            const size_t index = y * VGA_WIDTH + x;
-            ((volatile unsigned short*)VGA_BUFFER)[index] = make_vga_entry(' ', terminal_color);
+    if (vga_state.graphics_mode) {
+        uint8_t bg = (terminal_color >> 4) & 0x0F;
+        vga_clear_screen(bg);
+    } else {
+        // Clear the screen
+        for (size_t y = 0; y < 25; y++) {
+            for (size_t x = 0; x < 80; x++) {
+                const size_t index = y * 80 + x;
+                ((volatile unsigned short*)VGA_BUFFER)[index] = make_vga_entry(' ', terminal_color);
+            }
         }
     }
     

@@ -34,6 +34,7 @@ static int cmd_gfx_main(int argc, char** argv) {
         
         vga_set_mode_13h();
         vga_clear_screen(COLOR_BLACK);
+        terminal_initialize();
         return 0;
     }
     
