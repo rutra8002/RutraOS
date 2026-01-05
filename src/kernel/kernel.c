@@ -61,15 +61,17 @@ void kernel_main(void) {
     process_init();
 
     // Create kernel process (but don't run it yet)
+    // Priority is LOW so it only runs when nothing else is ready
     process_t* kernel_proc = process_create("kernel", kernel_process_main, NULL, 
-                                          PROCESS_PRIORITY_KERNEL, 16384);
+                                          PROCESS_PRIORITY_LOW, 16384);
     if (!kernel_proc) {
         terminal_writestring("ERROR: Failed to create kernel process\n");
     }
 
     // Create shell process (but run it directly for now)
+    // Priority is NORMAL so it runs before the idle loop
     process_t* shell_proc = process_create("shell", shell_process_main, NULL, 
-                                         PROCESS_PRIORITY_HIGH, 16384);
+                                         PROCESS_PRIORITY_NORMAL, 16384);
     if (!shell_proc) {
         terminal_writestring("ERROR: Failed to create shell process\n");
         terminal_writestring("System cannot continue without shell process.\n");
@@ -81,17 +83,19 @@ void kernel_main(void) {
 
     terminal_writestring("Starting shell process...\n\n");
 
-    // Set shell as current process and run it directly
-    // This avoids complex context switching issues for now
-    current_process = shell_proc;
-    shell_proc->state = PROCESS_STATE_RUNNING;
+    // Set kernel process as current process
+    current_process = kernel_proc;
+    kernel_proc->state = PROCESS_STATE_RUNNING;
     
-    // Call the shell process directly - no context switching
-    shell_process_main(NULL);
+    // Start scheduling - this will switch to the shell process
+    terminal_writestring("Kernel: Handing over to scheduler...\n");
+    process_schedule();
 
-    // This should never be reached
-    terminal_writestring("ERROR: Scheduler returned to kernel_main\n");
+    // This becomes the idle loop for the kernel process
+    terminal_writestring("Kernel: Entered idle loop (multitasking active)\n");
     while (1) {
-        __asm__ volatile("hlt");
+        process_yield();
+        // We cannot use hlt here because we don't have interrupts enabled yet
+        // __asm__ volatile("hlt"); 
     }
 }

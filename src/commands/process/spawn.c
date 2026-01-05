@@ -5,7 +5,10 @@
 
 // Test process function
 static void test_process_main(void* args) {
-    char* name = (char*)args;
+    // Use the name from the process structure as args might be invalid if passed from stack
+    process_t* current = process_get_current();
+    const char* name = current->name;
+    
     terminal_writestring("Test process ");
     terminal_writestring(name);
     terminal_writestring(" started\n");
@@ -19,8 +22,11 @@ static void test_process_main(void* args) {
         terminal_writestring(iter_str);
         terminal_writestring("\n");
         
-        // Simple delay instead of yield
-        for (volatile int j = 0; j < 100000; j++) {
+        // Yield to let other processes run
+        process_yield();
+        
+        // Small delay
+        for (volatile int j = 0; j < 1000000; j++) {
             // Busy wait
         }
     }
@@ -29,19 +35,14 @@ static void test_process_main(void* args) {
     terminal_writestring(name);
     terminal_writestring(" finished\n");
     
-    // Mark as terminated but don't actually terminate
-    // (this avoids context switching issues)
-    process_t* current = process_get_current();
-    if (current) {
-        current->state = PROCESS_STATE_TERMINATED;
-    }
+    // Process will be terminated automatically when this function returns
 }
 
 static int cmd_spawn_main(int argc, char** argv) {
     if (command_check_help_flag(argc, argv)) {
         command_show_usage("spawn", "<name>");
         terminal_writestring("Create a new test process with the given name.\n");
-        terminal_writestring("The process will run a simple test routine and terminate.\n");
+        terminal_writestring("The process will run in the background.\n");
         return 0;
     }
     
@@ -55,7 +56,7 @@ static int cmd_spawn_main(int argc, char** argv) {
     strncpy(process_name, argv[1], sizeof(process_name) - 1);
     process_name[sizeof(process_name) - 1] = '\0';
     
-    process_t* proc = process_create(process_name, test_process_main, process_name,
+    process_t* proc = process_create(process_name, test_process_main, NULL,
                                    PROCESS_PRIORITY_NORMAL, 8192);
     if (proc) {
         terminal_writestring("Created process: ");
@@ -66,11 +67,7 @@ static int cmd_spawn_main(int argc, char** argv) {
         terminal_writestring(pid_str);
         terminal_writestring(")\n");
         
-        // Run the process in the background by calling it directly
-        // This simulates background execution without complex scheduling
-        terminal_writestring("Running process in background...\n");
-        test_process_main(process_name);
-        terminal_writestring("Process finished\n");
+        terminal_writestring("Process spawned in background.\n");
         return 0;
     } else {
         terminal_writestring("Failed to spawn process\n");

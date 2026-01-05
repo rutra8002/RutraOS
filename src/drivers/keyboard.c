@@ -1,5 +1,6 @@
 #include "keyboard.h"
 #include "io.h"
+#include "process.h"
 
 // A very simple keyboard driver
 
@@ -111,6 +112,9 @@ char keyboard_getchar() {
                     return c;
                 }
             }
+        } else {
+            // Yield to other processes while waiting
+            process_yield();
         }
     }
 }

@@ -80,6 +80,12 @@ static void process_remove_from_list(process_t* proc) {
     proc->prev = NULL;
 }
 
+// Trampoline for process exit
+static void process_exit_trampoline(void) {
+    process_terminate(current_process, 0);
+    while(1); // Should not be reached
+}
+
 // Create a new process
 process_t* process_create(const char* name, process_entry_t entry, void* args,
                          process_priority_t priority, size_t stack_size) {
@@ -127,7 +133,17 @@ process_t* process_create(const char* name, process_entry_t entry, void* args,
     memset(&proc->context, 0, sizeof(cpu_context_t));
     
     // Set up stack pointer (grows downward)
-    proc->context.rsp = (uint64_t)proc->stack_base + stack_size - 8;
+    // Align to 16 bytes
+    uint64_t stack_top = (uint64_t)proc->stack_base + stack_size;
+    stack_top &= ~0xF;
+    
+    uint64_t* stack_ptr = (uint64_t*)stack_top;
+    
+    // Push return address for the entry function
+    stack_ptr--;
+    *stack_ptr = (uint64_t)process_exit_trampoline;
+    
+    proc->context.rsp = (uint64_t)stack_ptr;
     proc->context.rbp = proc->context.rsp;
     
     // Set entry point
@@ -136,8 +152,9 @@ process_t* process_create(const char* name, process_entry_t entry, void* args,
     // Set up arguments in RDI register (first argument for System V ABI)
     proc->context.rdi = (uint64_t)args;
     
-    // Set default flags (interrupts enabled)
-    proc->context.rflags = 0x202;
+    // Set default flags (interrupts DISABLED because we have no IDT yet)
+    // 0x002 = Reserved bit (must be 1), IF=0
+    proc->context.rflags = 0x002;
     
     // Use kernel page directory for now (no memory isolation yet)
     __asm__ volatile("mov %%cr3, %0" : "=r"(proc->context.cr3));
@@ -324,35 +341,8 @@ static process_t* process_find_next(void) {
     return best_proc;
 }
 
-// Context switching function - simplified version
-void process_switch_context(cpu_context_t* old_context, cpu_context_t* new_context) {
-    // For now, we'll implement a simple cooperative multitasking
-    // without full context switching. This is safer and easier to debug.
-    
-    if (old_context) {
-        // Save minimal context
-        __asm__ volatile("movq %%rsp, %0" : "=m"(old_context->rsp));
-        __asm__ volatile("movq %%rbp, %0" : "=m"(old_context->rbp));
-    }
-    
-    if (new_context) {
-        // For new processes, we need to set up their initial state
-        // For now, we'll just switch to their entry point directly
-        // This is a simplified approach for initial implementation
-        
-        if (new_context->rip) {
-            // This is a new process, call its entry point
-            void (*entry_func)(void*) = (void (*)(void*))new_context->rip;
-            void* args = (void*)new_context->rdi;
-            
-            // Call the process entry point
-            entry_func(args);
-            
-            // If process returns, terminate it
-            process_terminate(current_process, 0);
-        }
-    }
-}
+// Context switching function - implemented in assembly
+// void process_switch_context(cpu_context_t* old_context, cpu_context_t* new_context);
 
 // Schedule the next process
 void process_schedule(void) {
@@ -400,30 +390,13 @@ void process_schedule(void) {
     next_proc->state = PROCESS_STATE_RUNNING;
     current_process = next_proc;
     
-    // For simplified implementation, directly call the process function
-    // if it hasn't been started yet
-    if (next_proc->context.rip) {
-        void (*entry_func)(void*) = (void (*)(void*))next_proc->context.rip;
-        void* args = (void*)next_proc->context.rdi;
-        
-        // Mark that this process has been started
-        next_proc->context.rip = 0;
-        
-        // Call the process entry point
-        entry_func(args);
-        
-        // If process returns, terminate it
-        process_terminate(next_proc, 0);
-    }
+    // Perform context switch
+    process_switch_context(old_proc ? &old_proc->context : NULL, &next_proc->context);
 }
 
-// Yield CPU to next process (simplified - no actual switching for now)
+// Yield CPU to next process
 void process_yield(void) {
-    // For now, just do a simple delay to prevent busy waiting
-    // Real process switching will be implemented later
-    for (volatile int i = 0; i < 1000; i++) {
-        // Small delay
-    }
+    process_schedule();
 }
 
 // Sleep for specified milliseconds (simplified - no real timer)
