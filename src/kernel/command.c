@@ -226,6 +226,7 @@ extern const command_info_t cmd_info_cmd_gfx_main;
 extern const command_info_t cmd_info_cmd_draw_main;
 extern const command_info_t cmd_info_cmd_fontdemo_main;
 extern const command_info_t cmd_info_cmd_lsdisks_main;
+extern const command_info_t cmd_info_cmd_date_main;
 
 // Register all built-in commands
 void command_register_builtins(void) {
@@ -245,6 +246,7 @@ void command_register_builtins(void) {
     command_register(&cmd_info_cmd_mkdir_main);
     command_register(&cmd_info_cmd_cd_main);
     command_register(&cmd_info_cmd_pwd_main);
+    command_register(&cmd_info_cmd_date_main);
     command_register(&cmd_info_cmd_gfx_main);
     command_register(&cmd_info_cmd_draw_main);
     command_register(&cmd_info_cmd_fontdemo_main);
