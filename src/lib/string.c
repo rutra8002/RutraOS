@@ -153,3 +153,28 @@ char* strtok(char* str, const char* delim) {
     
     return start;
 }
+
+// Convert uint32_t to hex string
+void uint32_to_hex(uint32_t value, char* buffer) {
+    const char hex_chars[] = "0123456789ABCDEF";
+    
+    if (value == 0) {
+        buffer[0] = '0';
+        buffer[1] = '\0';
+        return;
+    }
+    
+    int i = 0;
+    while (value > 0) {
+        buffer[i++] = hex_chars[value & 0xF];
+        value >>= 4;
+    }
+    buffer[i] = '\0';
+    
+    // Reverse the string
+    for (int j = 0; j < i / 2; j++) {
+        char temp = buffer[j];
+        buffer[j] = buffer[i - 1 - j];
+        buffer[i - 1 - j] = temp;
+    }
+}

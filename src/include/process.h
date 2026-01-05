@@ -39,16 +39,10 @@ typedef struct process {
     cpu_context_t context;           // CPU context
     void* stack_base;                // Stack base address
     size_t stack_size;               // Stack size
-    void* memory_base;               // Process memory base
-    size_t memory_size;              // Process memory size
     
     struct process* parent;          // Parent process
     struct process* next;            // Next process in list
     struct process* prev;            // Previous process in list
-    
-    uint64_t time_slice;             // Time slice for round-robin
-    uint64_t time_used;              // Time used in current slice
-    uint64_t total_time;             // Total CPU time used
     
     int exit_code;                   // Exit code when terminated
 } process_t;

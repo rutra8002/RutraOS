@@ -81,16 +81,8 @@ int fat16_create_directory(const char* dirname);
 int fat16_change_directory(const char* path);
 int fat16_list_directory(const char* path);
 char* fat16_get_current_directory(void);
-int fat16_is_directory(const char* name);
 
-// Path functions
-int fat16_parse_path(const char* path, char* components[], int max_components);
-int fat16_find_directory_entry(const char* path, fat16_dir_entry_t* entry, uint16_t* parent_cluster);
-uint16_t fat16_get_directory_cluster(const char* path);
-
-// Internal FAT16 functions
-uint16_t fat16_get_fat_entry(uint16_t cluster);
-void fat16_set_fat_entry(uint16_t cluster, uint16_t value);
+// Internal FAT16 functions (simplified)
 uint16_t fat16_find_free_cluster(void);
 int fat16_read_cluster(uint16_t cluster, void* buffer);
 int fat16_write_cluster(uint16_t cluster, const void* buffer);

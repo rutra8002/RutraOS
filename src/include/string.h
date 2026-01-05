@@ -16,5 +16,6 @@ char* strtok(char* str, const char* delim);
 
 // Number to string conversion
 void uint32_to_string(uint32_t value, char* buffer);
+void uint32_to_hex(uint32_t value, char* buffer);
 
 #endif // STRING_H

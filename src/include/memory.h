@@ -22,8 +22,4 @@ void kfree(void* ptr);
 // Memory debugging functions
 void memory_print_stats(void);
 
-// Helper functions
-void uint32_to_string(uint32_t value, char* buffer);
-void uint32_to_hex(uint32_t value, char* buffer);
-
 #endif // MEMORY_H

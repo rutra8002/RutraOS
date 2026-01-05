@@ -8,11 +8,6 @@ static char memory_pool[MEMORY_POOL_SIZE];
 static memory_block_t* memory_list = NULL;
 static int memory_initialized = 0;
 
-// Memory statistics
-static size_t total_allocated = 0;
-static size_t total_free = 0;
-static size_t allocation_count = 0;
-
 void memory_init(void) {
     if (memory_initialized) {
         return;
@@ -24,7 +19,6 @@ void memory_init(void) {
     memory_list->is_free = 1;
     memory_list->next = NULL;
     
-    total_free = memory_list->size;
     memory_initialized = 1;
     
     terminal_writestring("Memory manager initialized with ");
@@ -64,9 +58,6 @@ void* kmalloc(size_t size) {
             }
             
             current->is_free = 0;
-            total_allocated += current->size;
-            total_free -= current->size;
-            allocation_count++;
             
             return (char*)current + MEMORY_BLOCK_SIZE;
         }
@@ -95,9 +86,6 @@ void kfree(void* ptr) {
     }
     
     block->is_free = 1;
-    total_allocated -= block->size;
-    total_free += block->size;
-    allocation_count--;
     
     // Coalesce adjacent free blocks
     memory_block_t* current = memory_list;
@@ -114,6 +102,22 @@ void kfree(void* ptr) {
 
 void memory_print_stats(void) {
     terminal_writestring("=== Memory Statistics ===\n");
+    
+    // Calculate heap statistics on-demand
+    size_t total_allocated = 0;
+    size_t total_free = 0;
+    size_t allocation_count = 0;
+    
+    memory_block_t* block = memory_list;
+    while (block) {
+        if (block->is_free) {
+            total_free += block->size;
+        } else {
+            total_allocated += block->size;
+            allocation_count++;
+        }
+        block = block->next;
+    }
     
     // Heap statistics
     terminal_writestring("HEAP MEMORY:\n");
@@ -295,30 +299,5 @@ void memory_print_stats(void) {
         
         current = current->next;
         block_count++;
-    }
-}
-
-// Helper function to convert uint32 to hex string
-void uint32_to_hex(uint32_t value, char* buffer) {
-    const char hex_chars[] = "0123456789ABCDEF";
-    
-    if (value == 0) {
-        buffer[0] = '0';
-        buffer[1] = '\0';
-        return;
-    }
-    
-    int i = 0;
-    while (value > 0) {
-        buffer[i++] = hex_chars[value & 0xF];
-        value >>= 4;
-    }
-    buffer[i] = '\0';
-    
-    // Reverse the string
-    for (int j = 0; j < i / 2; j++) {
-        char temp = buffer[j];
-        buffer[j] = buffer[i - 1 - j];
-        buffer[i - 1 - j] = temp;
     }
 }
