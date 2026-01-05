@@ -5,6 +5,8 @@
 #include "rtc.h"
 #include "string.h"
 #include "io.h"
+#include "memory.h"
+#include "memory_utils.h"
 
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 200
@@ -189,6 +191,16 @@ int cmd_platformer_main(int argc, char** argv) {
 
     init_pit();
 
+    // Allocate backbuffer for double buffering
+    uint8_t* backbuffer = (uint8_t*)kmalloc(SCREEN_WIDTH * SCREEN_HEIGHT);
+    if (!backbuffer) {
+        terminal_writestring("Error: Failed to allocate backbuffer.\n");
+        return 1;
+    }
+    
+    // Save original framebuffer pointer (VGA memory)
+    uint8_t* vga_mem = (uint8_t*)0xA0000;
+
     Player player;
     init_game(&player);
 
@@ -222,7 +234,16 @@ int cmd_platformer_main(int argc, char** argv) {
         if (key_right) player.vx = MOVE_SPEED;
 
         update_player(&player);
+        
+        // Draw to backbuffer
+        vga_state.framebuffer = backbuffer;
         draw_game(&player);
+        
+        // Flip buffer (copy backbuffer to VGA memory)
+        memcpy(vga_mem, backbuffer, SCREEN_WIDTH * SCREEN_HEIGHT);
+        
+        // Restore framebuffer pointer (optional, but good practice)
+        vga_state.framebuffer = vga_mem;
 
         // Cap to 60 FPS
         while (1) {
@@ -239,6 +260,10 @@ int cmd_platformer_main(int argc, char** argv) {
 
     // Clear screen on exit
     vga_clear_screen(VGA_COLOR_BLACK);
+    
+    // Free backbuffer
+    kfree(backbuffer);
+    
     return 0;
 }
 
