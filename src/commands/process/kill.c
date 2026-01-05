@@ -22,12 +22,7 @@ static int cmd_kill_main(int argc, char** argv) {
     }
     
     // Simple string to int conversion
-    uint32_t pid = 0;
-    const char* p = argv[1];
-    while (*p >= '0' && *p <= '9') {
-        pid = pid * 10 + (*p - '0');
-        p++;
-    }
+    uint32_t pid = (uint32_t)atoi(argv[1]);
     
     if (pid == 0) {
         terminal_writestring("Invalid PID\n");

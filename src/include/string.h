@@ -15,7 +15,9 @@ char* strcat(char* dest, const char* src);
 char* strtok(char* str, const char* delim);
 
 // Number to string conversion
+int atoi(const char* str);
 void uint32_to_string(uint32_t value, char* buffer);
+void uint32_to_string_padded(uint32_t value, char* buffer, int width, char pad);
 void uint32_to_hex(uint32_t value, char* buffer);
 
 #endif // STRING_H

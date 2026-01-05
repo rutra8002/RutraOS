@@ -5,10 +5,6 @@
 // A very simple keyboard driver
 
 #define KBD_DATA_PORT 0x60
-#define LEFT_SHIFT_SCANCODE 0x2A
-#define RIGHT_SHIFT_SCANCODE 0x36
-#define LEFT_SHIFT_RELEASE 0xAA
-#define RIGHT_SHIFT_RELEASE 0xB6
 
 // Track shift key state
 static int shift_pressed = 0;

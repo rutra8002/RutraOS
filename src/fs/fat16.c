@@ -4,7 +4,6 @@
 #include "terminal.h"
 #include "string.h"
 #include "memory_utils.h"
-#include "string.h"
 
 // Current directory tracking
 static char current_directory[256] = "/";

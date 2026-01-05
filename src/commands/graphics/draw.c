@@ -3,23 +3,6 @@
 #include "vga.h"
 #include "string.h"
 
-static int parse_int(const char* str) {
-    int result = 0;
-    int sign = 1;
-    
-    if (*str == '-') {
-        sign = -1;
-        str++;
-    }
-    
-    while (*str >= '0' && *str <= '9') {
-        result = result * 10 + (*str - '0');
-        str++;
-    }
-    
-    return result * sign;
-}
-
 static int cmd_draw_main(int argc, char** argv) {
     if (command_check_help_flag(argc, argv)) {
         command_show_usage("draw", "<shape> [params...]");
@@ -50,9 +33,9 @@ static int cmd_draw_main(int argc, char** argv) {
             terminal_writestring("Usage: draw pixel <x> <y> <color>\n");
             return 1;
         }
-        int x = parse_int(argv[2]);
-        int y = parse_int(argv[3]);
-        int color = parse_int(argv[4]);
+        int x = atoi(argv[2]);
+        int y = atoi(argv[3]);
+        int color = atoi(argv[4]);
         vga_put_pixel(x, y, color);
         return 0;
     }
@@ -62,11 +45,11 @@ static int cmd_draw_main(int argc, char** argv) {
             terminal_writestring("Usage: draw line <x1> <y1> <x2> <y2> <color>\n");
             return 1;
         }
-        int x1 = parse_int(argv[2]);
-        int y1 = parse_int(argv[3]);
-        int x2 = parse_int(argv[4]);
-        int y2 = parse_int(argv[5]);
-        int color = parse_int(argv[6]);
+        int x1 = atoi(argv[2]);
+        int y1 = atoi(argv[3]);
+        int x2 = atoi(argv[4]);
+        int y2 = atoi(argv[5]);
+        int color = atoi(argv[6]);
         vga_draw_line(x1, y1, x2, y2, color);
         return 0;
     }
@@ -76,11 +59,11 @@ static int cmd_draw_main(int argc, char** argv) {
             terminal_writestring("Usage: draw rect <x> <y> <width> <height> <color>\n");
             return 1;
         }
-        int x = parse_int(argv[2]);
-        int y = parse_int(argv[3]);
-        int w = parse_int(argv[4]);
-        int h = parse_int(argv[5]);
-        int color = parse_int(argv[6]);
+        int x = atoi(argv[2]);
+        int y = atoi(argv[3]);
+        int w = atoi(argv[4]);
+        int h = atoi(argv[5]);
+        int color = atoi(argv[6]);
         vga_draw_rectangle(x, y, w, h, color);
         return 0;
     }
@@ -90,11 +73,11 @@ static int cmd_draw_main(int argc, char** argv) {
             terminal_writestring("Usage: draw fill <x> <y> <width> <height> <color>\n");
             return 1;
         }
-        int x = parse_int(argv[2]);
-        int y = parse_int(argv[3]);
-        int w = parse_int(argv[4]);
-        int h = parse_int(argv[5]);
-        int color = parse_int(argv[6]);
+        int x = atoi(argv[2]);
+        int y = atoi(argv[3]);
+        int w = atoi(argv[4]);
+        int h = atoi(argv[5]);
+        int color = atoi(argv[6]);
         vga_draw_filled_rectangle(x, y, w, h, color);
         return 0;
     }
@@ -104,10 +87,10 @@ static int cmd_draw_main(int argc, char** argv) {
             terminal_writestring("Usage: draw circle <cx> <cy> <radius> <color>\n");
             return 1;
         }
-        int cx = parse_int(argv[2]);
-        int cy = parse_int(argv[3]);
-        int r = parse_int(argv[4]);
-        int color = parse_int(argv[5]);
+        int cx = atoi(argv[2]);
+        int cy = atoi(argv[3]);
+        int r = atoi(argv[4]);
+        int color = atoi(argv[5]);
         vga_draw_circle(cx, cy, r, color);
         return 0;
     }
@@ -117,7 +100,7 @@ static int cmd_draw_main(int argc, char** argv) {
             terminal_writestring("Usage: draw clear <color>\n");
             return 1;
         }
-        int color = parse_int(argv[2]);
+        int color = atoi(argv[2]);
         vga_clear_screen(color);
         return 0;
     }
@@ -127,10 +110,10 @@ static int cmd_draw_main(int argc, char** argv) {
             terminal_writestring("Usage: draw text <x> <y> <fg_color> <bg_color> <text>\n");
             return 1;
         }
-        int x = parse_int(argv[2]);
-        int y = parse_int(argv[3]);
-        int fg = parse_int(argv[4]);
-        int bg = parse_int(argv[5]);
+        int x = atoi(argv[2]);
+        int y = atoi(argv[3]);
+        int fg = atoi(argv[4]);
+        int bg = atoi(argv[5]);
         
         // Combine remaining arguments as text
         char text_buffer[256];

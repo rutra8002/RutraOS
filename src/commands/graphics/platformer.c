@@ -7,6 +7,7 @@
 #include "io.h"
 #include "memory.h"
 #include "memory_utils.h"
+#include "timer.h"
 
 #define SCREEN_WIDTH 320
 #define SCREEN_HEIGHT 200
@@ -17,39 +18,8 @@
 #define GROUND_LEVEL 180
 
 // PIT Constants
-#define PIT_CMD_PORT 0x43
-#define PIT_CH0_PORT 0x40
-#define PIT_FREQ 1193182
 #define FPS 60
 #define TICKS_PER_FRAME (PIT_FREQ / FPS)
-
-void init_pit() {
-    // Channel 0, Access lo/hi, Mode 2 (Rate Generator), Binary
-    outb(PIT_CMD_PORT, 0x34);
-    // Set count to 0 (65536)
-    outb(PIT_CH0_PORT, 0x00);
-    outb(PIT_CH0_PORT, 0x00);
-}
-
-uint16_t pit_read_count() {
-    uint16_t count = 0;
-    outb(PIT_CMD_PORT, 0x00); // Latch
-    count = inb(PIT_CH0_PORT);
-    count |= (inb(PIT_CH0_PORT) << 8);
-    return count;
-}
-
-// Scancodes
-#define KEY_W 0x11
-#define KEY_A 0x1E
-#define KEY_S 0x1F
-#define KEY_D 0x20
-#define KEY_SPACE 0x39
-#define KEY_ESC 0x01
-#define KEY_UP 0x48
-#define KEY_LEFT 0x4B
-#define KEY_RIGHT 0x4D
-#define KEY_DOWN 0x50
 
 typedef struct {
     int x, y;
@@ -162,18 +132,15 @@ void draw_game(Player* p) {
     char buf[10];
     
     time_str[0] = '\0';
-    uint32_to_string(t.hour, buf);
-    if (t.hour < 10) strcat(time_str, "0");
+    uint32_to_string_padded(t.hour, buf, 2, '0');
     strcat(time_str, buf);
     strcat(time_str, ":");
     
-    uint32_to_string(t.minute, buf);
-    if (t.minute < 10) strcat(time_str, "0");
+    uint32_to_string_padded(t.minute, buf, 2, '0');
     strcat(time_str, buf);
     strcat(time_str, ":");
     
-    uint32_to_string(t.second, buf);
-    if (t.second < 10) strcat(time_str, "0");
+    uint32_to_string_padded(t.second, buf, 2, '0');
     strcat(time_str, buf);
 
     vga_draw_string(240, 10, time_str, VGA_COLOR_WHITE, VGA_COLOR_BLACK);
@@ -189,7 +156,7 @@ int cmd_platformer_main(int argc, char** argv) {
         return 1;
     }
 
-    init_pit();
+    timer_init();
 
     // Allocate backbuffer for double buffering
     uint8_t* backbuffer = (uint8_t*)kmalloc(SCREEN_WIDTH * SCREEN_HEIGHT);
@@ -209,7 +176,7 @@ int cmd_platformer_main(int argc, char** argv) {
     int key_right = 0;
 
     while (running) {
-        uint16_t start_count = pit_read_count();
+        uint16_t start_count = timer_read_count();
 
         // Input handling
         if (keyboard_has_input()) {
@@ -247,7 +214,7 @@ int cmd_platformer_main(int argc, char** argv) {
 
         // Cap to 60 FPS
         while (1) {
-            uint16_t current_count = pit_read_count();
+            uint16_t current_count = timer_read_count();
             uint16_t diff;
             if (start_count >= current_count) {
                 diff = start_count - current_count;

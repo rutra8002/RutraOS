@@ -178,3 +178,46 @@ void uint32_to_hex(uint32_t value, char* buffer) {
         buffer[i - 1 - j] = temp;
     }
 }
+
+// Convert string to integer
+int atoi(const char* str) {
+    int result = 0;
+    int sign = 1;
+    
+    // Skip whitespace
+    while (*str == ' ' || *str == '\t' || *str == '\n') {
+        str++;
+    }
+
+    if (*str == '-') {
+        sign = -1;
+        str++;
+    } else if (*str == '+') {
+        str++;
+    }
+    
+    while (*str >= '0' && *str <= '9') {
+        result = result * 10 + (*str - '0');
+        str++;
+    }
+    
+    return result * sign;
+}
+
+// Convert uint32_t to string with padding
+void uint32_to_string_padded(uint32_t value, char* buffer, int width, char pad) {
+    char temp[32];
+    uint32_to_string(value, temp);
+    
+    int len = strlen(temp);
+    int pad_len = width - len;
+    
+    if (pad_len < 0) pad_len = 0;
+    
+    int i = 0;
+    for (; i < pad_len; i++) {
+        buffer[i] = pad;
+    }
+    
+    strcpy(buffer + i, temp);
+}
