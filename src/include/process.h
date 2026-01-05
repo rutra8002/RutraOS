@@ -40,6 +40,15 @@ typedef struct process {
     void* stack_base;                // Stack base address
     size_t stack_size;               // Stack size
     
+    // Memory management
+    void* memory_base;               // Process memory base address
+    size_t memory_size;              // Process memory size
+    
+    // Time tracking
+    uint64_t time_slice;             // Time slice in milliseconds
+    uint64_t time_used;              // Time used in current slice
+    uint64_t total_time;             // Total CPU time used
+    
     struct process* parent;          // Parent process
     struct process* next;            // Next process in list
     struct process* prev;            // Previous process in list
