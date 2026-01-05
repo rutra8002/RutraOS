@@ -89,12 +89,20 @@ void keyboard_init() {
     // Nothing to do for now
 }
 
+int keyboard_has_input() {
+    return (inb(0x64) & 1);
+}
+
+unsigned char keyboard_read_scancode() {
+    return inb(KBD_DATA_PORT);
+}
+
 char keyboard_getchar() {
     unsigned char scancode;
     while (1) {
         // Wait for a key press
-        if (inb(0x64) & 1) {
-            scancode = inb(KBD_DATA_PORT);
+        if (keyboard_has_input()) {
+            scancode = keyboard_read_scancode();
             
             // Handle shift key presses and releases
             if (scancode == LEFT_SHIFT_SCANCODE || scancode == RIGHT_SHIFT_SCANCODE) {
