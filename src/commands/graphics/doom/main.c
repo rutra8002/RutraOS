@@ -8,6 +8,8 @@
 #include "doom.h"
 #include "lolek.h"
 #include "string.h"  // Added for memcpy
+#include "mouse.h"
+#include "io.h"
 
 // FPS Control
 #define FPS 30
@@ -60,6 +62,11 @@ int cmd_doom_main(int argc, char** argv) {
 
         // Input handling - process all pending events
         while (keyboard_has_input()) {
+            // Check for mouse data
+            if (inb(0x64) & 0x20) {
+                 mouse_handle_byte(inb(0x60));
+                 continue;
+            }
             uint8_t scancode = keyboard_read_scancode();
             
             // ESC

@@ -6,6 +6,8 @@
 #include "memory.h"
 #include "memory_utils.h"
 #include "game.h"
+#include "mouse.h"
+#include "io.h"
 
 // PIT Constants for framerate
 #define FPS 60
@@ -43,7 +45,12 @@ int cmd_platformer_main(int argc, char** argv) {
         uint16_t start_count = timer_read_count();
 
         // Input handling
-        if (keyboard_has_input()) {
+        while (keyboard_has_input()) {
+            // Check for mouse data
+            if (inb(0x64) & 0x20) {
+                 mouse_handle_byte(inb(0x60));
+                 continue;
+            }
             uint8_t scancode = keyboard_read_scancode();
             
             // Key Press (Make code)
