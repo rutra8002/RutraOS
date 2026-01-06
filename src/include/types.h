@@ -9,6 +9,11 @@ typedef unsigned int uint32_t;
 typedef unsigned long long uint64_t;
 typedef unsigned long uintptr_t;  // For pointer arithmetic
 
+typedef signed char int8_t;
+typedef signed short int16_t;
+typedef signed int int32_t;
+typedef signed long long int64_t;
+
 // Define NULL since we don't use standard libraries
 #ifndef NULL
 #define NULL ((void*)0)

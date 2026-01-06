@@ -2,6 +2,7 @@
 #include "terminal.h"
 #include "shell.h"
 #include "keyboard.h"
+#include "mouse.h"
 #include "ramdisk.h"
 #include "process.h"
 #include "memory.h"
@@ -52,6 +53,9 @@ void kernel_main(void) {
 
     // Initialize keyboard
     keyboard_init();
+
+    // Initialize mouse
+    mouse_init();
 
     // Initialize VGA graphics (starts in text mode)
     vga_init();

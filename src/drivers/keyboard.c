@@ -1,6 +1,7 @@
 #include "keyboard.h"
 #include "io.h"
 #include "process.h"
+#include "mouse.h"
 
 // A very simple keyboard driver
 
@@ -98,6 +99,13 @@ char keyboard_getchar() {
     while (1) {
         // Wait for a key press
         if (keyboard_has_input()) {
+            
+            // Check if it's mouse data
+            if (inb(0x64) & 0x20) {
+                 mouse_handle_byte(inb(KBD_DATA_PORT));
+                 continue;
+            }
+
             scancode = keyboard_read_scancode();
             
             // Handle shift key presses and releases
