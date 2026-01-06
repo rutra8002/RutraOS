@@ -136,9 +136,4 @@ int cmd_doom_main(int argc, char** argv) {
     return 0;
 }
 
-const command_info_t cmd_info_cmd_doom_main = {
-    .name = "doom",
-    .description = "Raycasting 3D Renderer (Wolfenstein 3D style)",
-    .main = cmd_doom_main,
-    .version = 1
-};
+REGISTER_COMMAND("doom", "Raycasting 3D Renderer", cmd_doom_main)

@@ -107,9 +107,4 @@ int cmd_platformer_main(int argc, char** argv) {
     return 0;
 }
 
-const command_info_t cmd_info_cmd_platformer_main = {
-    .name = "platformer",
-    .description = "Simple platformer game",
-    .main = cmd_platformer_main,
-    .version = 1
-};
+REGISTER_COMMAND("platformer", "Simple platformer game", cmd_platformer_main)
