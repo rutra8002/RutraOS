@@ -1,6 +1,6 @@
 #include "doom.h"
 #include "vga.h"
-#include "math.h"
+#include "lolek.h"
 
 // World map: 1=wall, 0=empty, >1=colored walls
 int world_map[MAP_WIDTH][MAP_HEIGHT] = {
