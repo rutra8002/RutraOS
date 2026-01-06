@@ -29,6 +29,9 @@ _start:
     call setup_page_tables
     call enable_paging
     
+    ; Enable SSE
+    call enable_sse
+    
     ; Load GDT and jump to 64-bit code
     lgdt [gdt64.pointer]
     jmp gdt64.code:long_mode_start
@@ -115,6 +118,28 @@ enable_paging:
     mov cr0, eax
     
     ret
+
+enable_sse:
+    ; Check for SSE support
+    mov eax, 1
+    cpuid
+    test edx, 1<<25
+    jz .no_sse
+
+    ; Enable SSE
+    mov eax, cr0
+    and ax, 0xFFFB      ; Clear EM
+    or ax, 0x2          ; Set MP
+    mov cr0, eax
+    
+    mov eax, cr4
+    or ax, 3<<9         ; Set OSFXSR and OSXMMEXCPT
+    mov cr4, eax
+    
+    ret
+.no_sse:
+    mov al, "a"
+    jmp error
 
 error:
     ; Print "ERR: X" where X is the error code

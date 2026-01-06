@@ -18,13 +18,15 @@ COMMANDS_SYS_DIR = $(COMMANDS_DIR)/system
 COMMANDS_PROC_DIR = $(COMMANDS_DIR)/process
 COMMANDS_UTILS_DIR = $(COMMANDS_DIR)/utils
 COMMANDS_GFX_PLATFORMER_DIR = $(COMMANDS_GFX_DIR)/platformer
+COMMANDS_GFX_DOOM_DIR = $(COMMANDS_GFX_DIR)/doom
 INCLUDE_DIR = $(SRC_DIR)/include
 
 # Files
 BOOT_ASM = $(BOOT_DIR)/boot.asm
 KERNEL_C_FILES = $(wildcard $(KERNEL_DIR)/*.c) $(wildcard $(DRIVERS_DIR)/*.c) $(wildcard $(FS_DIR)/*.c) $(wildcard $(LIB_DIR)/*.c) \
                  $(wildcard $(COMMANDS_FS_DIR)/*.c) $(wildcard $(COMMANDS_GFX_DIR)/*.c) $(wildcard $(COMMANDS_SYS_DIR)/*.c) \
-                 $(wildcard $(COMMANDS_PROC_DIR)/*.c) $(wildcard $(COMMANDS_UTILS_DIR)/*.c) $(wildcard $(COMMANDS_GFX_PLATFORMER_DIR)/*.c)
+                 $(wildcard $(COMMANDS_PROC_DIR)/*.c) $(wildcard $(COMMANDS_UTILS_DIR)/*.c) $(wildcard $(COMMANDS_GFX_PLATFORMER_DIR)/*.c) \
+                 $(wildcard $(COMMANDS_GFX_DOOM_DIR)/*.c)
 BOOT_OBJ = $(BUILD_DIR)/boot.o
 KERNEL_OBJS = $(patsubst $(KERNEL_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(KERNEL_DIR)/*.c)) \
               $(patsubst $(DRIVERS_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(DRIVERS_DIR)/*.c)) \
@@ -35,7 +37,8 @@ KERNEL_OBJS = $(patsubst $(KERNEL_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(KERNEL_
               $(patsubst $(COMMANDS_SYS_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(COMMANDS_SYS_DIR)/*.c)) \
               $(patsubst $(COMMANDS_PROC_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(COMMANDS_PROC_DIR)/*.c)) \
               $(patsubst $(COMMANDS_UTILS_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(COMMANDS_UTILS_DIR)/*.c)) \
-              $(patsubst $(COMMANDS_GFX_PLATFORMER_DIR)/%.c,$(BUILD_DIR)/%.o,$(wildcard $(COMMANDS_GFX_PLATFORMER_DIR)/*.c))
+              $(patsubst $(COMMANDS_GFX_PLATFORMER_DIR)/%.c,$(BUILD_DIR)/plat_%.o,$(wildcard $(COMMANDS_GFX_PLATFORMER_DIR)/*.c)) \
+              $(patsubst $(COMMANDS_GFX_DOOM_DIR)/%.c,$(BUILD_DIR)/doom_%.o,$(wildcard $(COMMANDS_GFX_DOOM_DIR)/*.c))
 KERNEL_BIN = $(BUILD_DIR)/kernel.bin
 GRUB_CFG = grub.cfg
 LINKER_SCRIPT = linker.ld
@@ -100,8 +103,11 @@ $(BUILD_DIR)/%.o: $(COMMANDS_PROC_DIR)/%.c | $(BUILD_DIR)
 $(BUILD_DIR)/%.o: $(COMMANDS_UTILS_DIR)/%.c | $(BUILD_DIR)
 	$(CC) $(CC_FLAGS) $< -o $@
 
-$(BUILD_DIR)/%.o: $(COMMANDS_GFX_PLATFORMER_DIR)/%.c | $(BUILD_DIR)
+$(BUILD_DIR)/plat_%.o: $(COMMANDS_GFX_PLATFORMER_DIR)/%.c | $(BUILD_DIR)
 	$(CC) $(CC_FLAGS) -I$(COMMANDS_GFX_PLATFORMER_DIR) $< -o $@
+
+$(BUILD_DIR)/doom_%.o: $(COMMANDS_GFX_DOOM_DIR)/%.c | $(BUILD_DIR)
+	$(CC) $(CC_FLAGS) -I$(COMMANDS_GFX_DOOM_DIR) $< -o $@
 
 # Link kernel binary
 $(KERNEL_BIN): $(BOOT_OBJ) $(KERNEL_OBJS) $(LINKER_SCRIPT) | $(BUILD_DIR)
