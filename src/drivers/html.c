@@ -5,6 +5,9 @@
 #include "terminal.h"
 #include "vga.h"
 
+// HTML rendering constants
+#define HTML_LINE_WIDTH 70  // Characters per line for word wrapping
+
 // Get element type from tag name
 html_element_type_t html_get_element_type(const char* tag) {
     if (!tag) return HTML_ELEMENT_UNKNOWN;
@@ -241,8 +244,8 @@ static void render_text(const char* text, html_render_state_t* state) {
     
     const char* p = text;
     while (*p) {
-        // Simple word wrapping (approximate)
-        if (state->cursor_x > 70) {
+        // Simple word wrapping at line width limit
+        if (state->cursor_x > HTML_LINE_WIDTH) {
             terminal_writestring("\n");
             state->cursor_x = 0;
             state->cursor_y++;

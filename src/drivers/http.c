@@ -139,7 +139,43 @@ static size_t http_build_request(const char* method, const char* host, const cha
             buffer[pos++] = *p++;
         }
         
-        // TODO: Add proper Content-Length formatting
+        // Add Content-Length header with actual body length
+        const char* cl_prefix = "Content-Length: ";
+        p = cl_prefix;
+        while (*p && pos < max_len) {
+            buffer[pos++] = *p++;
+        }
+        
+        // Convert body_len to string
+        char len_str[16];
+        size_t len_idx = 0;
+        size_t temp_len = body_len;
+        if (temp_len == 0) {
+            len_str[len_idx++] = '0';
+        } else {
+            char temp_buf[16];
+            size_t temp_idx = 0;
+            while (temp_len > 0) {
+                temp_buf[temp_idx++] = '0' + (temp_len % 10);
+                temp_len /= 10;
+            }
+            // Reverse the digits
+            while (temp_idx > 0) {
+                len_str[len_idx++] = temp_buf[--temp_idx];
+            }
+        }
+        len_str[len_idx] = '\0';
+        
+        // Copy length string
+        for (size_t i = 0; i < len_idx && pos < max_len; i++) {
+            buffer[pos++] = len_str[i];
+        }
+        
+        // Add CRLF
+        if (pos + 2 < max_len) {
+            buffer[pos++] = '\r';
+            buffer[pos++] = '\n';
+        }
     }
     
     // End of headers
