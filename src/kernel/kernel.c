@@ -8,6 +8,9 @@
 #include "memory.h"
 #include "vga.h"
 #include "ata.h"
+#include "network.h"
+#include "dns.h"
+#include "http.h"
 
 // Main kernel function - called from assembly
 void kernel_main(void) {
@@ -60,6 +63,11 @@ void kernel_main(void) {
     // Initialize VGA graphics (starts in text mode)
     vga_init();
     terminal_writestring("VGA graphics driver initialized\n");
+
+    // Initialize networking
+    network_init();
+    dns_init();
+    http_init();
 
     // Initialize process management
     process_init();
