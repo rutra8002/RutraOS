@@ -47,7 +47,7 @@ RutraOS boots on any x86\_64 PC (or virtual machine) via GRUB, enters 64-bit lon
 +-------------------+
 |  Boot (GRUB/ASM)  |  ← Multiboot, long mode setup, GDT, paging
 +-------------------+
-       x86_64 hardware
+   x86_64 hardware
 ```
 
 ---
